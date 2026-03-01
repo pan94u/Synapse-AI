@@ -43,6 +43,13 @@
         "zod": "^3.24.0",
       },
     },
+    "packages/memory": {
+      "name": "@synapse/memory",
+      "version": "0.1.0",
+      "dependencies": {
+        "@synapse/shared": "workspace:*",
+      },
+    },
     "packages/personas": {
       "name": "@synapse/personas",
       "version": "0.1.0",
@@ -58,6 +65,7 @@
         "@synapse/agent-core": "workspace:*",
         "@synapse/compliance": "workspace:*",
         "@synapse/mcp-hub": "workspace:*",
+        "@synapse/memory": "workspace:*",
         "@synapse/personas": "workspace:*",
         "@synapse/shared": "workspace:*",
         "hono": "^4.7.0",
@@ -80,6 +88,8 @@
     "@synapse/mcp-hub": ["@synapse/mcp-hub@workspace:packages/mcp-hub"],
 
     "@synapse/mcp-servers": ["@synapse/mcp-servers@workspace:packages/mcp-servers"],
+
+    "@synapse/memory": ["@synapse/memory@workspace:packages/memory"],
 
     "@synapse/personas": ["@synapse/personas@workspace:packages/personas"],
 

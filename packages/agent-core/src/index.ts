@@ -4,9 +4,10 @@ import { ClaudeProvider } from './models/provider-claude.js';
 import { ModelRouter } from './models/router.js';
 import { ToolRegistry } from './tools/registry.js';
 import { ToolExecutor } from './tools/executor.js';
-import { registerBuiltInTools } from './tools/built-in/index.js';
+import { registerBuiltInTools, registerMemoryTools } from './tools/built-in/index.js';
 import { Agent } from './agent/agent.js';
 import type { Tool } from './tools/types.js';
+import type { MemoryToolDeps } from './tools/built-in/memory-types.js';
 
 // Models
 export { ModelRouter } from './models/router.js';
@@ -18,8 +19,12 @@ export type { ModelProvider, CompletionParams, CompletionResult, StreamChunk } f
 export { ToolRegistry } from './tools/registry.js';
 export { ToolExecutor } from './tools/executor.js';
 export type { ComplianceHooks } from './tools/executor.js';
-export { registerBuiltInTools } from './tools/built-in/index.js';
+export { registerBuiltInTools, registerMemoryTools } from './tools/built-in/index.js';
+export type { MemoryToolDeps } from './tools/built-in/index.js';
 export type { Tool } from './tools/types.js';
+export { createMemoryReadTool } from './tools/built-in/memory-read.js';
+export { createMemoryWriteTool } from './tools/built-in/memory-write.js';
+export { createKnowledgeSearchTool } from './tools/built-in/knowledge-search.js';
 
 // Agent
 export { Agent } from './agent/agent.js';
@@ -125,11 +130,12 @@ export interface AgentWithComplianceOptions {
   mcpTools?: MCPToolAdapter[];
   personaContext?: PersonaContext;
   complianceHooks?: import('./tools/executor.js').ComplianceHooks;
+  memoryToolDeps?: MemoryToolDeps;
 }
 
 /**
  * Create an Agent with default router, built-in tools, optional MCP tools,
- * persona context, and compliance pre/post hooks.
+ * persona context, compliance pre/post hooks, and optional memory tools.
  */
 export function createAgentWithCompliance(options: AgentWithComplianceOptions): Agent {
   const router = createDefaultRouter();
@@ -140,6 +146,10 @@ export function createAgentWithCompliance(options: AgentWithComplianceOptions): 
     for (const mcpTool of options.mcpTools) {
       registry.register(mcpTool as Tool);
     }
+  }
+
+  if (options.memoryToolDeps) {
+    registerMemoryTools(registry, options.memoryToolDeps);
   }
 
   const executor = new ToolExecutor(

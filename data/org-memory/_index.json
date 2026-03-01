@@ -1,0 +1,14 @@
+[
+  {
+    "id": "expense-policy-001",
+    "category": "policies",
+    "title": "员工报销制度",
+    "tags": ["报销", "财务", "制度", "费用"]
+  },
+  {
+    "id": "code-standards-001",
+    "category": "knowledge",
+    "title": "代码规范与最佳实践",
+    "tags": ["代码规范", "TypeScript", "Git", "工程"]
+  }
+]

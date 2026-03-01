@@ -13,6 +13,7 @@
     "@synapse/mcp-hub": "workspace:*",
     "@synapse/personas": "workspace:*",
     "@synapse/compliance": "workspace:*",
+    "@synapse/memory": "workspace:*",
     "hono": "^4.7.0"
   }
 }

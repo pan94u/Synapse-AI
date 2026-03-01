@@ -46,3 +46,10 @@ export type {
   ComplianceRuleSet,
   AuditTrailEntry,
 } from './types/compliance.js';
+
+export type {
+  OrgMemoryEntry,
+  PersonalFact,
+  ConversationSummary,
+  KnowledgeDocument,
+} from './types/memory.js';

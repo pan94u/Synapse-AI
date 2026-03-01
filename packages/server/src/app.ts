@@ -5,11 +5,15 @@ import { logger } from 'hono/logger';
 import { MCPHub } from '@synapse/mcp-hub';
 import { PersonaRegistry, loadAllPersonas } from '@synapse/personas';
 import { ComplianceEngine, ComplianceAuditTrail, ApprovalManager } from '@synapse/compliance';
+import { OrgMemoryStore, PersonalMemoryStore, KnowledgeBase } from '@synapse/memory';
 import { chatRoutes } from './routes/chat.js';
 import { createAgentRoutes } from './routes/agent.js';
 import { createMCPRoutes } from './routes/mcp.js';
 import { createPersonaRoutes } from './routes/personas.js';
 import { createComplianceRoutes } from './routes/compliance.js';
+import { createOrgMemoryRoutes } from './routes/org-memory.js';
+import { createMemoryRoutes } from './routes/memory.js';
+import { createKnowledgeRoutes } from './routes/knowledge.js';
 
 export async function createApp(): Promise<{ app: Hono; hub: MCPHub }> {
   const app = new Hono();
@@ -36,6 +40,12 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub }> {
   const auditTrail = new ComplianceAuditTrail();
   const approvalManager = new ApprovalManager();
 
+  // Initialize Memory stores
+  const orgMemory = new OrgMemoryStore(resolve(process.cwd(), 'data/org-memory'));
+  const personalMemory = new PersonalMemoryStore(resolve(process.cwd(), 'data/memory'));
+  const knowledgeBase = new KnowledgeBase(resolve(process.cwd(), 'data/knowledge'));
+  console.log('[server] Memory stores initialized');
+
   // Chat routes (model router only, no tools)
   app.route('/api', chatRoutes);
 
@@ -47,6 +57,11 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub }> {
 
   // Compliance routes
   app.route('/api', createComplianceRoutes(complianceEngine, auditTrail, approvalManager));
+
+  // Memory routes
+  app.route('/api', createOrgMemoryRoutes(orgMemory));
+  app.route('/api', createMemoryRoutes(personalMemory));
+  app.route('/api', createKnowledgeRoutes(knowledgeBase));
 
   // Initialize MCP Hub and create agent
   try {
@@ -67,6 +82,9 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub }> {
       personaRegistry,
       complianceEngine,
       auditTrail,
+      orgMemory,
+      personalMemory,
+      knowledgeBase,
     }));
     console.log('[server] MCP Hub initialized, agent has MCP tools');
   } catch (err) {
@@ -82,6 +100,9 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub }> {
       personaRegistry,
       complianceEngine,
       auditTrail,
+      orgMemory,
+      personalMemory,
+      knowledgeBase,
     }));
   }
 
