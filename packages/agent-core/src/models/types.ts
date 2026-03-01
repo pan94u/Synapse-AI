@@ -1,8 +1,9 @@
-import type { ChatMessage, TokenUsage } from '@synapse/shared';
+import type { ChatMessage, TokenUsage, ToolDefinition, ToolCall } from '@synapse/shared';
 
 export interface CompletionParams {
   messages: ChatMessage[];
   model: string;
+  tools?: ToolDefinition[];
 }
 
 export interface CompletionResult {
@@ -10,6 +11,7 @@ export interface CompletionResult {
   thinking?: string;
   model: string;
   usage?: TokenUsage;
+  toolCalls?: ToolCall[];
 }
 
 export interface StreamChunk {
@@ -18,6 +20,7 @@ export interface StreamChunk {
   done: boolean;
   model?: string;
   usage?: TokenUsage;
+  toolCalls?: ToolCall[];
 }
 
 export interface ModelProvider {

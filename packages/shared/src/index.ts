@@ -12,3 +12,11 @@ export type {
   ModelConfig,
   ProviderConfig,
 } from './types/model.js';
+
+export type {
+  ToolDefinition,
+  ToolCall,
+  ToolResult,
+  ToolPermission,
+  ToolConfig,
+} from './types/tool.js';

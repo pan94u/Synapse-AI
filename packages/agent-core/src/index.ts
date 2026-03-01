@@ -2,11 +2,26 @@ import type { ModelConfig } from '@synapse/shared';
 import { MiniMaxProvider } from './models/provider-minimax.js';
 import { ClaudeProvider } from './models/provider-claude.js';
 import { ModelRouter } from './models/router.js';
+import { ToolRegistry } from './tools/registry.js';
+import { ToolExecutor } from './tools/executor.js';
+import { registerBuiltInTools } from './tools/built-in/index.js';
+import { Agent } from './agent/agent.js';
 
+// Models
 export { ModelRouter } from './models/router.js';
 export { MiniMaxProvider } from './models/provider-minimax.js';
 export { ClaudeProvider } from './models/provider-claude.js';
 export type { ModelProvider, CompletionParams, CompletionResult, StreamChunk } from './models/types.js';
+
+// Tools
+export { ToolRegistry } from './tools/registry.js';
+export { ToolExecutor } from './tools/executor.js';
+export { registerBuiltInTools } from './tools/built-in/index.js';
+export type { Tool } from './tools/types.js';
+
+// Agent
+export { Agent } from './agent/agent.js';
+export type { AgentConfig, AgentResult, AgentStreamEvent } from './agent/types.js';
 
 export function createDefaultRouter(): ModelRouter {
   const router = new ModelRouter('MiniMax-M2.5');
@@ -60,4 +75,16 @@ export function createDefaultRouter(): ModelRouter {
   }
 
   return router;
+}
+
+/**
+ * Create a fully configured Agent with default router and built-in tools.
+ */
+export function createDefaultAgent(): Agent {
+  const router = createDefaultRouter();
+  const registry = new ToolRegistry();
+  registerBuiltInTools(registry);
+  const executor = new ToolExecutor(registry);
+
+  return new Agent({ router, registry, executor });
 }

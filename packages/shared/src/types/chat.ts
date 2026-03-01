@@ -1,7 +1,11 @@
+import type { ToolCall } from './tool.js';
+
 export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: 'system' | 'user' | 'assistant' | 'tool';
   content: string;
   thinking?: string;
+  toolCalls?: ToolCall[];
+  toolCallId?: string; // for tool role messages
 }
 
 export type RoutingStrategy = 'default' | 'cost-optimized' | 'quality-first';
