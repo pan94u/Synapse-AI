@@ -530,8 +530,9 @@ packages/server/package.json                       # +2 行: @synapse/personas, 
 
 ## Session 5 — Phase 5: 组织记忆 + 个人记忆 + 知识库
 
-**日期**: 2026-03-01
+**日期**: 2026-03-01 ~ 2026-03-02
 **Commit**: `28ee1e7` feat: Phase 5 — Org Memory + Personal Memory + Knowledge Base
+**Fix Commit**: `7d9f339` fix: align memory tools with persona system + fix seed data filenames
 
 ### Plan（目标）
 
@@ -598,6 +599,8 @@ packages/server/package.json                       # +2 行: @synapse/personas, 
 
 ### Check（验证）
 
+**编译验证**:
+
 | 测试项 | 结果 |
 |--------|------|
 | `bunx tsc --noEmit` (8 packages) | 8/8 通过，零错误 |
@@ -607,12 +610,78 @@ packages/server/package.json                       # +2 行: @synapse/personas, 
 | agent-core 结构类型 | MemoryToolDeps 使用适配器接口，无循环依赖 |
 | server 路由注册 | 17 个新端点 + memory stores 注入 Agent 路由 |
 
+**运行时验证**（`DATABASE_PATH=/tmp/test-synapse-p5.sqlite bun run packages/server/src/index.ts`）：
+
+*Org Memory API (9 tests)*:
+
+| 测试项 | 命令 | 结果 |
+|--------|------|------|
+| 列出种子数据 | `GET /api/org-memory` | ✅ 2 条: 员工报销制度, 代码规范 |
+| 搜索 报销 | `GET /api/org-memory/search?q=报销` | ✅ 1 条匹配 |
+| 按 category 过滤 | `GET /api/org-memory?category=policies` | ✅ 1 条 policies |
+| 获取单条 | `GET /api/org-memory/expense-policy-001` | ✅ 完整 title + content + tags |
+| 创建条目 | `POST /api/org-memory {category:"decisions",...}` | ✅ 201, UUID 生成 |
+| 更新条目(仅tags) | `PUT /api/org-memory/:id {tags:[...]}` | ✅ title + content 保留不丢失 |
+| 删除条目 | `DELETE /api/org-memory/:id` | ✅ deleted: true |
+| 删后列表 | `GET /api/org-memory` | ✅ 恢复 2 条 |
+| 删后 404 | `GET /api/org-memory/:deleted_id` | ✅ 404 |
+
+*Personal Memory API (8 tests)*:
+
+| 测试项 | 命令 | 结果 |
+|--------|------|------|
+| 设置偏好 | `PUT /api/memory/ceo/facts/report_day {value:"周三"}` | ✅ key=report_day, value=周三 |
+| 设置第二个偏好 | `PUT /api/memory/ceo/facts/language {value:"中文"}` | ✅ |
+| 获取特定偏好 | `GET /api/memory/ceo/facts/report_day` | ✅ value=周三 |
+| 列出所有偏好 | `GET /api/memory/ceo/facts` | ✅ 2 条 |
+| 更新已有偏好 | `PUT /api/memory/ceo/facts/report_day {value:"周五"}` | ✅ 幂等更新 |
+| 删除偏好 | `DELETE /api/memory/ceo/facts/language` | ✅ |
+| 删后列表 | `GET /api/memory/ceo/facts` | ✅ 1 条 (report_day=周五) |
+| 不存在的偏好 | `GET /api/memory/ceo/facts/nonexistent` | ✅ 404 |
+
+*Conversation Summary API (4 tests)*:
+
+| 测试项 | 命令 | 结果 |
+|--------|------|------|
+| 添加摘要 | `POST /api/memory/ceo/conversations {date:"2026-03-01",...}` | ✅ 201 |
+| 添加第二条 | `POST /api/memory/ceo/conversations {date:"2026-02-28",...}` | ✅ 201 |
+| 列出摘要 | `GET /api/memory/ceo/conversations` | ✅ 2 条，按 createdAt 倒序 |
+| 带 limit 列出 | `GET /api/memory/ceo/conversations?limit=1` | ✅ 1 条 |
+
+*Knowledge Base API (8 tests)*:
+
+| 测试项 | 命令 | 结果 |
+|--------|------|------|
+| 导入文档 | `POST /api/knowledge {title:"部署流程指南",...}` | ✅ 201, UUID |
+| 导入第二个 | `POST /api/knowledge {title:"API设计规范",...}` | ✅ 201 |
+| 列出文档 | `GET /api/knowledge` | ✅ 2 个文档 |
+| 搜索 部署 | `GET /api/knowledge/search?q=部署` | ✅ 1 条: 部署流程指南 |
+| 搜索+personaId | `GET /api/knowledge/search?q=API&personaId=engineer` | ✅ 1 条: API设计规范 |
+| 获取单个文档 | `GET /api/knowledge/:id` | ✅ 完整 content + tags |
+| 删除文档 | `DELETE /api/knowledge/:id` | ✅ deleted: true |
+| 删后列表 | `GET /api/knowledge` | ✅ 1 个文档 |
+
+*Agent + Memory Tool 集成 (4 tests)*:
+
+| 测试项 | 命令 | 结果 |
+|--------|------|------|
+| CEO 工具列表 | `GET /api/personas/ceo/tools` | ✅ 5 个工具 (db_query, db_list_tables, memory_read, memory_write, knowledge_search) |
+| Agent + memory_read | `POST /api/agent {personaId:"ceo",..."查看报销制度"}` | ✅ 1 次 tool_call, 返回完整报销制度内容 |
+| Agent + memory_write | `POST /api/agent {personaId:"ceo",..."记住周三交周报"}` | ✅ 1 次 tool_call, 偏好已持久化到 `data/memory/ceo/facts.json` |
+| Agent + knowledge_search | `POST /api/agent {personaId:"engineer",..."搜索API文档"}` | ✅ 1 次 tool_call, 返回 API设计规范 |
+
+**总计: 33/33 测试通过**
+
 ### Act（经验沉淀）
 
 - **结构类型规避循环依赖**: agent-core 的 memory tools 需要 memory stores 的方法签名，但不应直接 import `@synapse/memory`。定义 `OrgMemoryStoreAdapter` 等结构接口，由 server 层注入实际实例，TypeScript 的 structural typing 自动匹配
 - **文件系统 + 索引模式**: 每个 store 维护 `_index.json` 做快速筛选（title + tags），content 全文匹配作为回退。写操作必须同步更新索引
 - **工厂函数 + 闭包注入**: memory tools 使用 `createXxxTool(deps)` 模式，通过闭包捕获 stores 和 personaId，避免修改 Tool 接口
 - **orgMemoryAccess 权限模型**: persona YAML 已有 `org_memory_access` 字段（如 CEO: `company/*`, `strategy/*`），`listByAccess()` 做 glob 映射到 category 过滤
+- **种子数据文件名必须匹配 ID**: OrgMemoryStore 用 `{id}.json` 定位文件，手写种子数据的文件名必须与 JSON 中的 `id` 字段一致（如 `expense-policy-001.json`），否则 `get()` 找不到文件
+- **新工具必须加入 persona allowedTools**: 注册了新工具后，必须同步更新所有 persona YAML 的 `allowed_tools` 列表，否则 `buildContext()` 会把新工具过滤掉，Agent 看不到
+- **buildContext 的 availableTools 输入要完整**: agent 路由的 `allToolNames` 必须包含所有已注册工具名（MCP + 内置 + memory），否则 persona 的 glob 匹配有命中也会因为输入列表缺失而被过滤
+- **PUT 路由避免 undefined 覆盖**: 解构 `const { title, content } = body` 后直接 spread 会把未传字段设为 `undefined`，覆盖已有值。应只传入 body 中实际存在的字段
 
 ### 文件变更表
 
@@ -642,8 +711,8 @@ packages/server/src/routes/knowledge.ts           # 知识库 API (5 endpoints)
 
 # Seed data
 data/org-memory/_index.json                       # 索引
-data/org-memory/policies/expense-policy.json      # 报销制度
-data/org-memory/knowledge/code-standards.json     # 代码规范
+data/org-memory/policies/expense-policy-001.json  # 报销制度
+data/org-memory/knowledge/code-standards-001.json # 代码规范
 ```
 
 **修改 7 个文件**:
@@ -662,14 +731,16 @@ bun.lock                                          # 自动更新
 | 指标 | 值 |
 |------|-----|
 | 新建文件 | 15 (+3 seed data) |
-| 修改文件 | 7 |
-| 代码行数 (净增) | +1,070 |
+| 修改文件 | 7 (+7 persona YAMLs in fix commit) |
+| 代码行数 (净增) | +1,127 |
 | 新增 Packages | 1 (`memory`) |
 | 总 Packages | 8 (`shared`, `agent-core`, `mcp-hub`, `mcp-servers`, `personas`, `compliance`, `memory`, `server`) |
 | 新增内置工具 | 3 (`memory_read`, `memory_write`, `knowledge_search`) |
 | 内置工具总计 | 8 (5 原有 + 3 新增) |
 | 新增 API 端点 | 17 (6 org-memory + 6 personal + 5 knowledge) |
-| Commits | 1 (`28ee1e7`) |
+| 运行时测试 | 33/33 通过 |
+| 运行时 Bug 修复 | 4 个 (种子文件名、persona allowedTools、allToolNames、PUT undefined 覆盖) |
+| Commits | 3 (`28ee1e7`, `9bf32b4`, `7d9f339`) |
 | 类型检查 | 8/8 通过 |
 
 ### 依赖拓扑
