@@ -1,0 +1,17 @@
+id: expense_review_alert
+name: 大额报销审核提醒
+description: 当提交大额报销申请时，自动提醒财务总监审核。
+
+prompt_template: |
+  今天是 {{CURRENT_DATE}}，系统收到一笔大额报销申请需要审核。
+
+  事件详情：{{event_payload}}
+
+  请执行以下审核步骤：
+  1. 核查报销金额是否在预算范围内
+  2. 检查该部门本月报销累计是否超标
+  3. 对照公司报销政策评估合规性
+  4. 给出审批建议（通过/需进一步核实/拒绝）
+
+variables:
+  event_payload: ""

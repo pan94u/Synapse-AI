@@ -53,3 +53,13 @@ export type {
   ConversationSummary,
   KnowledgeDocument,
 } from './types/memory.js';
+
+export type {
+  ProactiveTaskConfig,
+  ActionDefinition,
+  ThresholdMonitorConfig,
+  ThresholdRule,
+  ProactiveTaskExecution,
+  ProactiveEvent,
+  ProactiveNotification,
+} from './types/proactive.js';

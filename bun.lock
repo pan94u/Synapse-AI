@@ -58,6 +58,14 @@
         "yaml": "^2.7.0",
       },
     },
+    "packages/proactive": {
+      "name": "@synapse/proactive",
+      "version": "0.1.0",
+      "dependencies": {
+        "@synapse/shared": "workspace:*",
+        "yaml": "^2.7.0",
+      },
+    },
     "packages/server": {
       "name": "@synapse/server",
       "version": "0.1.0",
@@ -67,6 +75,7 @@
         "@synapse/mcp-hub": "workspace:*",
         "@synapse/memory": "workspace:*",
         "@synapse/personas": "workspace:*",
+        "@synapse/proactive": "workspace:*",
         "@synapse/shared": "workspace:*",
         "hono": "^4.7.0",
       },
@@ -92,6 +101,8 @@
     "@synapse/memory": ["@synapse/memory@workspace:packages/memory"],
 
     "@synapse/personas": ["@synapse/personas@workspace:packages/personas"],
+
+    "@synapse/proactive": ["@synapse/proactive@workspace:packages/proactive"],
 
     "@synapse/server": ["@synapse/server@workspace:packages/server"],
 

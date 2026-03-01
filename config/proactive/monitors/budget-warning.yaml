@@ -1,0 +1,30 @@
+id: budget-warning
+name: 预算使用率预警
+check_interval: 4h
+persona_id: finance-controller
+
+query:
+  prompt: |
+    请查询当前各部门的预算使用情况，返回以下 JSON 格式：
+    {
+      "usage_rate": 0.85,
+      "total_budget": 1000000,
+      "used_budget": 850000,
+      "remaining_budget": 150000,
+      "department": "全公司"
+    }
+    其中 usage_rate 为已用预算占总预算的比例（0-1之间的小数）。
+
+thresholds:
+  - condition: "usage_rate >= 0.9"
+    severity: critical
+    notify:
+      - ceo
+      - finance-controller
+    message: "预算预警：预算使用率已达 {usage_rate}，剩余预算 {remaining_budget} 元，请及时关注。"
+
+  - condition: "usage_rate >= 0.8"
+    severity: warning
+    notify:
+      - finance-controller
+    message: "预算提醒：预算使用率已达 {usage_rate}，请注意控制支出。"

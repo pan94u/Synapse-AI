@@ -1,0 +1,20 @@
+id: contract_renewal_reminder
+name: 合同续签提醒
+description: 当合同即将到期时，自动生成续签提醒和建议。
+
+prompt_template: |
+  今天是 {{CURRENT_DATE}}，系统检测到合同即将到期。
+
+  事件详情：{{event_payload}}
+
+  请生成合同续签评估报告：
+  1. 合同基本信息（合同号、对方单位、金额、到期日）
+  2. 历史履约评估
+  3. 续签建议（续签/重新谈判/终止）
+  4. 关键条款修改建议
+  5. 时间节点提醒（法务审核、领导审批、签署截止日）
+
+  请查询合同数据库获取详细信息。
+
+variables:
+  event_payload: ""

@@ -1,0 +1,18 @@
+id: weekly_sales_report
+name: 每周销售报告
+description: 每周一自动生成销售周报，汇总业绩和商机进展。
+
+prompt_template: |
+  今天是 {{CURRENT_DATE}}，请生成本周销售报告。
+
+  请汇总以下内容：
+  1. 本周销售额及同比/环比变化
+  2. 新签合同及金额
+  3. 商机管道更新（新增、推进、关闭）
+  4. 重点客户动态
+  5. 下周销售工作计划
+
+  请查询 CRM 和销售数据库获取实际数据。
+
+variables:
+  report_type: weekly

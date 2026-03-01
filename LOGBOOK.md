@@ -755,3 +755,184 @@ bun.lock                                          # 自动更新
   │     └── @synapse/server (shared, agent-core, mcp-hub, personas, compliance, memory, hono)
   └── @synapse/mcp-servers (@modelcontextprotocol/sdk, zod)  ← 独立进程
 ```
+
+---
+
+## Session 6 — Phase 6: 主动智能 (Proactive Intelligence)
+
+**日期**: 2026-03-02
+**Commit**: 待提交（所有文件已创建，typecheck 通过）
+
+### Plan（目标）
+
+让 Agent 从被动等待用户提问转变为**主动行动**——定时生成经营摘要、监听事件自动预警、超阈值自动报告。激活 6 个 persona 中已定义但从未生效的 `proactiveTasks` YAML 字段。验证场景："每周一 9:00 自动生成高管经营日报；预算超 90% 主动预警"。
+
+### Do（实施）
+
+1. **共享类型扩展（@synapse/shared）**
+   - `ProactiveTaskConfig`: 从 persona YAML 提取的主动任务配置（id, personaId, schedule/trigger, action）
+   - `ActionDefinition`: YAML 加载的 action 定义（promptTemplate + variables + targetModel）
+   - `ThresholdMonitorConfig` + `ThresholdRule`: 阈值监控配置（checkInterval, query, conditions）
+   - `ProactiveTaskExecution`: 任务执行记录（triggerType, status, result, toolCallsExecuted）
+   - `ProactiveEvent`: 事件总线事件（name, source, payload, timestamp）
+   - `ProactiveNotification`: 主动通知（severity, read/unread, source）
+
+2. **@synapse/proactive 包（10 个源文件）**
+   - `cron-parser.ts`: 自写 5-field cron 解析器（~70 行）
+     - 支持: `*`, `*/step`, `N-M`, `N-M/step`, 逗号分隔
+     - `parseCron(expression)` → `CronFields`, `matchesCron(fields, date)` → boolean
+   - `cron-scheduler.ts`: `CronScheduler` — 60s interval 定时检查
+     - `lastRun` 时间戳（分钟级 key）防止同分钟重复触发
+     - register / unregister / start / stop / listJobs
+   - `event-bus.ts`: `EventBus` — Node.js EventEmitter 封装
+     - `emit()` 自动生成 UUID + timestamp，返回 `ProactiveEvent`
+     - `onAny()` 全局监听，`listEventNames()` 列出已注册事件
+   - `action-loader.ts`: YAML action 文件加载器（snake_case → camelCase）
+   - `action-registry.ts`: `ActionRegistry` — action 注册 + prompt 渲染
+     - `renderPrompt()`: 替换 `{{var}}` 占位符，内置 `{{CURRENT_DATE}}` = 当天日期
+   - `task-history.ts`: `TaskHistory` — 执行历史存储
+     - 文件存储: `data/proactive/history/{id}.json` + `_index.json`
+     - recordStart / recordComplete / query（支持 taskId, personaId, status, limit 过滤）
+   - `notification-store.ts`: `NotificationStore` — 通知存储
+     - 文件存储: `data/proactive/notifications/{id}.json` + `_index.json`
+     - 已读/未读管理: markRead / markAllRead / getUnreadCount
+     - getForPersona（支持 unreadOnly + limit）
+   - `threshold-monitor.ts`: `ThresholdMonitor` — 阈值监控器
+     - 通过 `AgentExecutor` 回调调用 Agent 查询数据
+     - 简单条件解析器: `field op value`（支持 >=, <=, >, <, ==, !=）
+     - 解析 Agent 返回的 JSON，逐条评估阈值规则
+     - `loadFromDir()`: 从 YAML 文件加载监控配置
+   - `task-manager.ts`: `ProactiveTaskManager` — **核心编排器**
+     - 不直接依赖 agent-core/personas/compliance/memory，通过回调注入
+     - `initialize()`: 加载 actions + 扫描 persona tasks + 注册 cron jobs + event handlers + threshold monitors
+     - `executeAction()` 核心流程: renderPrompt → recordStart → agentExecutor → recordComplete → createNotification
+     - `emitEvent()`: 手动发射事件，自动触发已注册的 event handler
+     - `getStatus()`: 状态概览（running, scheduledJobs, registeredEvents, activeMonitors）
+   - `index.ts`: 导出所有公开 API
+
+3. **11 个 Action YAML 配置**（`config/proactive/actions/`）
+   - CEO: `weekly_business_summary`（周一 8:00 经营周报）、`alert_ceo`（财务异常预警）
+   - Finance: `daily_financial_summary`（每日 8:00 财务日报）、`expense_review_alert`（大额报销审核）
+   - HR: `weekly_attendance_summary`（周一 9:00 考勤周报）、`onboarding_checklist`（入职清单）
+   - Legal: `contract_renewal_reminder`（合同续签提醒）
+   - Sales: `weekly_sales_report`（周一 9:00 销售周报）、`deal_update_notification`（商机变更通知）
+   - Ops: `daily_operations_summary`（每日 8:00 运营日报）、`reorder_alert`（库存补货预警）
+
+4. **2 个 Threshold Monitor YAML**（`config/proactive/monitors/`）
+   - `budget-warning.yaml`: 预算使用率 ≥80% warning / ≥90% critical，通知 finance-controller + ceo
+   - `inventory-alert.yaml`: 库存低于安全线 warning / 最低比例 ≤30% critical，通知 ops-manager + ceo
+
+5. **Server 集成**
+   - `routes/proactive.ts`: 8 个 API 端点
+     - `GET /api/proactive/status` — 调度器状态
+     - `GET /api/proactive/actions` — 列出所有 action
+     - `POST /api/proactive/actions/:actionId/execute` — 手动执行 action
+     - `POST /api/proactive/events` — 发射事件
+     - `GET /api/proactive/history` — 查询执行历史（支持 personaId, taskId, status, limit）
+     - `GET /api/proactive/notifications` — 查询通知（支持 personaId, unreadOnly, limit）
+     - `POST /api/proactive/notifications/:id/read` — 标记已读
+     - `POST /api/proactive/notifications/read-all` — 全部标记已读
+   - `app.ts` 重构:
+     - 构造 `agentExecutor` 回调: 复用 agent 路由中 `createAgentWithCompliance` 逻辑（含 persona context + compliance hooks + memory tools）
+     - 构造 `getProactiveTasks` 回调: 从 PersonaRegistry 提取所有 persona 的 proactiveTasks
+     - 创建 `ProactiveTaskManager` → `initialize()` → `start()` → 注册路由
+     - 返回值新增 `proactiveManager` 用于 graceful shutdown
+   - `index.ts`: 添加 SIGTERM/SIGINT 信号处理，graceful shutdown（proactiveManager.stop() + hub.stop()）
+
+### Check（验证）
+
+| 测试项 | 结果 |
+|--------|------|
+| `bunx tsc --noEmit` shared | 通过 |
+| `bunx tsc --noEmit` proactive | 通过 |
+| `bunx tsc --noEmit` server | 通过 |
+| 依赖安装 | 138 packages，@synapse/proactive 正确识别 |
+| 依赖拓扑 | proactive 仅依赖 shared + yaml，不依赖 agent-core |
+| 文件清单 | ~27 新建 + 4 修改，与计划一致 |
+
+### Act（经验沉淀）
+
+- **回调注入模式**: proactive 包不依赖 agent-core/personas/compliance/memory，通过 `AgentExecutor` + `getProactiveTasks` 回调由 server 层桥接。这与 agent-core 的 memory tools 使用结构类型避免循环依赖是同一策略
+- **Cron 防重触发**: 60s interval 可能在同一分钟执行两次，用 `lastRun` 的分钟级字符串 key 去重
+- **文件存储一致性**: 继续沿用 memory 包确立的 `{id}.json + _index.json` 模式，写操作同步更新索引
+- **阈值条件解析器**: 简单 `field op value` 解析足够 Phase 6，不需要引入完整表达式引擎。Agent 返回 JSON + 简单条件比对，比硬编码数据库查询更 AI-native
+- **通知只存不推**: Phase 6 聚焦调度和执行逻辑，通知存入 NotificationStore 供 API 查询；Slack/邮件/企业微信推送推迟到 Phase 8+
+
+### 文件变更表
+
+**新建 ~27 个文件**:
+```
+# Shared types
+packages/shared/src/types/proactive.ts             # Proactive 共享类型 (7 interfaces)
+
+# Proactive package
+packages/proactive/package.json                     # 包配置 (依赖: shared, yaml)
+packages/proactive/tsconfig.json                    # TS 配置
+packages/proactive/src/index.ts                     # 公开 API 导出
+packages/proactive/src/cron-parser.ts               # 5-field cron 解析器
+packages/proactive/src/cron-scheduler.ts            # 60s interval 调度器
+packages/proactive/src/event-bus.ts                 # EventEmitter 封装
+packages/proactive/src/action-loader.ts             # YAML action 加载器
+packages/proactive/src/action-registry.ts           # Action 注册表 + prompt 渲染
+packages/proactive/src/task-history.ts              # 执行历史存储
+packages/proactive/src/notification-store.ts        # 通知存储
+packages/proactive/src/threshold-monitor.ts         # 阈值监控器
+packages/proactive/src/task-manager.ts              # ProactiveTaskManager 编排器
+
+# Action YAML configs (11)
+config/proactive/actions/weekly_business_summary.yaml
+config/proactive/actions/alert_ceo.yaml
+config/proactive/actions/daily_financial_summary.yaml
+config/proactive/actions/expense_review_alert.yaml
+config/proactive/actions/weekly_attendance_summary.yaml
+config/proactive/actions/onboarding_checklist.yaml
+config/proactive/actions/contract_renewal_reminder.yaml
+config/proactive/actions/weekly_sales_report.yaml
+config/proactive/actions/deal_update_notification.yaml
+config/proactive/actions/daily_operations_summary.yaml
+config/proactive/actions/reorder_alert.yaml
+
+# Threshold Monitor YAML configs (2)
+config/proactive/monitors/budget-warning.yaml
+config/proactive/monitors/inventory-alert.yaml
+
+# Server route
+packages/server/src/routes/proactive.ts             # Proactive API (8 endpoints)
+```
+
+**修改 4 个文件**:
+```
+packages/shared/src/index.ts                        # +8 行: 导出 Proactive 类型
+packages/server/package.json                        # +1 行: @synapse/proactive 依赖
+packages/server/src/app.ts                          # +65 行: agentExecutor 回调 + ProactiveTaskManager 初始化 + 路由
+packages/server/src/index.ts                        # +9 行: graceful shutdown (SIGTERM/SIGINT)
+```
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 新建文件 | 27 |
+| 修改文件 | 4 |
+| 新增 Package | 1 (`proactive`) |
+| 总 Packages | 9 (`shared`, `agent-core`, `mcp-hub`, `mcp-servers`, `personas`, `compliance`, `memory`, `proactive`, `server`) |
+| 新增 API 端点 | 8 |
+| Action 定义 | 11 个 |
+| Threshold Monitor | 2 个 |
+| Cron 定时任务 | 5 个 (3 weekly + 2 daily) |
+| 事件触发器 | 6 个 (financial_anomaly, large_expense_submitted, employee_onboarding, contract_expiry_approaching, deal_stage_change, inventory_low) |
+| 类型检查 | shared + proactive + server 全部通过 |
+
+### 依赖拓扑
+
+```
+@synapse/shared (无依赖)
+  ├── @synapse/agent-core (shared, openai)
+  ├── @synapse/personas (shared, yaml)
+  ├── @synapse/compliance (shared, yaml)
+  ├── @synapse/memory (shared)
+  ├── @synapse/proactive (shared, yaml)              ← 新建
+  ├── @synapse/mcp-hub (shared, @modelcontextprotocol/sdk, zod)
+  │     └── @synapse/server (shared, agent-core, mcp-hub, personas, compliance, memory, proactive, hono)
+  └── @synapse/mcp-servers (@modelcontextprotocol/sdk, zod)  ← 独立进程
+```

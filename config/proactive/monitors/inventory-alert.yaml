@@ -1,0 +1,30 @@
+id: inventory-alert
+name: 库存安全线预警
+check_interval: 2h
+persona_id: ops-manager
+
+query:
+  prompt: |
+    请查询当前库存水平，特别关注低于安全库存线的商品。
+    返回以下 JSON 格式：
+    {
+      "below_safety_count": 3,
+      "total_items": 100,
+      "critical_items": "商品A(库存10/安全线50), 商品B(库存5/安全线30)",
+      "lowest_ratio": 0.2
+    }
+    其中 below_safety_count 为低于安全库存的商品数量，lowest_ratio 为最低库存占安全线的比例。
+
+thresholds:
+  - condition: "below_safety_count >= 1"
+    severity: warning
+    notify:
+      - ops-manager
+    message: "库存预警：{below_safety_count} 个商品低于安全库存线。详情：{critical_items}"
+
+  - condition: "lowest_ratio <= 0.3"
+    severity: critical
+    notify:
+      - ops-manager
+      - ceo
+    message: "库存紧急：最低库存仅为安全线的 {lowest_ratio}，请立即安排补货。"

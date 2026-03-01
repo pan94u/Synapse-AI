@@ -6,6 +6,8 @@ import { MCPHub } from '@synapse/mcp-hub';
 import { PersonaRegistry, loadAllPersonas } from '@synapse/personas';
 import { ComplianceEngine, ComplianceAuditTrail, ApprovalManager } from '@synapse/compliance';
 import { OrgMemoryStore, PersonalMemoryStore, KnowledgeBase } from '@synapse/memory';
+import { ProactiveTaskManager } from '@synapse/proactive';
+import type { ProactiveTaskConfig } from '@synapse/shared';
 import { chatRoutes } from './routes/chat.js';
 import { createAgentRoutes } from './routes/agent.js';
 import { createMCPRoutes } from './routes/mcp.js';
@@ -14,8 +16,9 @@ import { createComplianceRoutes } from './routes/compliance.js';
 import { createOrgMemoryRoutes } from './routes/org-memory.js';
 import { createMemoryRoutes } from './routes/memory.js';
 import { createKnowledgeRoutes } from './routes/knowledge.js';
+import { createProactiveRoutes } from './routes/proactive.js';
 
-export async function createApp(): Promise<{ app: Hono; hub: MCPHub }> {
+export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveManager?: ProactiveTaskManager }> {
   const app = new Hono();
   const hub = new MCPHub();
 
@@ -64,9 +67,20 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub }> {
   app.route('/api', createKnowledgeRoutes(knowledgeBase));
 
   // Initialize MCP Hub and create agent
+  let agentRouteDeps: {
+    mcpTools?: import('@synapse/agent-core').MCPToolAdapter[];
+    personaRegistry: PersonaRegistry;
+    complianceEngine: ComplianceEngine;
+    auditTrail: ComplianceAuditTrail;
+    orgMemory: OrgMemoryStore;
+    personalMemory: PersonalMemoryStore;
+    knowledgeBase: KnowledgeBase;
+  } = { personaRegistry, complianceEngine, auditTrail, orgMemory, personalMemory, knowledgeBase };
+
   try {
     await hub.start();
     const mcpTools = await hub.getTools();
+    agentRouteDeps = { ...agentRouteDeps, mcpTools };
 
     // Create a tool registry for persona tool listing
     const { ToolRegistry, registerBuiltInTools, registerMemoryTools } = await import('@synapse/agent-core');
@@ -82,15 +96,7 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub }> {
     });
 
     app.route('/api', createPersonaRoutes(personaRegistry, toolRegistry));
-    app.route('/api', createAgentRoutes({
-      mcpTools,
-      personaRegistry,
-      complianceEngine,
-      auditTrail,
-      orgMemory,
-      personalMemory,
-      knowledgeBase,
-    }));
+    app.route('/api', createAgentRoutes(agentRouteDeps));
     console.log('[server] MCP Hub initialized, agent has MCP tools');
   } catch (err) {
     console.warn('[server] MCP Hub init failed, using default agent:', err);
@@ -105,15 +111,96 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub }> {
     });
 
     app.route('/api', createPersonaRoutes(personaRegistry, toolRegistry));
-    app.route('/api', createAgentRoutes({
-      personaRegistry,
-      complianceEngine,
-      auditTrail,
-      orgMemory,
-      personalMemory,
-      knowledgeBase,
-    }));
+    app.route('/api', createAgentRoutes(agentRouteDeps));
   }
 
-  return { app, hub };
+  // Initialize Proactive Task Manager
+  let proactiveManager: ProactiveTaskManager | undefined;
+  try {
+    const { createAgentWithCompliance } = await import('@synapse/agent-core');
+    const mcpTools = agentRouteDeps.mcpTools;
+
+    // agentExecutor callback — reuses Agent creation logic from agent routes
+    const agentExecutor = async (personaId: string, userMessage: string) => {
+      const allToolNames = [
+        ...(mcpTools ? mcpTools.map((t) => t.definition.name) : []),
+        'file_read', 'file_write', 'file_search', 'shell_exec', 'web_fetch',
+        ...(orgMemory ? ['memory_read', 'memory_write', 'knowledge_search'] : []),
+      ];
+      const personaContext = personaRegistry.buildContext(personaId, allToolNames);
+      if (!personaContext) {
+        throw new Error(`Persona "${personaId}" not found`);
+      }
+
+      let complianceHooks: import('@synapse/agent-core').ComplianceHooks | undefined;
+      if (complianceEngine && auditTrail) {
+        const rulesetId = personaContext.complianceRuleset;
+        complianceHooks = {
+          preCheck: (params) => complianceEngine.preCheck({ ...params, rulesetId }),
+          postCheck: (params) => complianceEngine.postCheck({ ...params, rulesetId }),
+          recordAudit: (entry) => auditTrail.record(entry),
+        };
+      }
+
+      let memoryToolDeps: import('@synapse/agent-core').MemoryToolDeps | undefined;
+      if (orgMemory && personalMemory && knowledgeBase) {
+        const personaConfig = personaRegistry.get(personaId);
+        memoryToolDeps = {
+          orgMemory, personalMemory, knowledgeBase,
+          personaId,
+          orgMemoryAccess: personaConfig?.orgMemoryAccess ?? [],
+        };
+      }
+
+      const agent = createAgentWithCompliance({
+        mcpTools,
+        personaContext,
+        complianceHooks,
+        memoryToolDeps,
+      });
+
+      const result = await agent.run([{ role: 'user', content: userMessage }]);
+      return {
+        content: result.message.content,
+        model: result.model,
+        toolCallsExecuted: result.toolCallsExecuted,
+      };
+    };
+
+    // getProactiveTasks callback — extracts from PersonaRegistry
+    const getProactiveTasks = (): ProactiveTaskConfig[] => {
+      const tasks: ProactiveTaskConfig[] = [];
+      for (const persona of personaRegistry.list()) {
+        for (const task of persona.proactiveTasks ?? []) {
+          tasks.push({
+            id: `${persona.id}:${task.action}`,
+            personaId: persona.id,
+            schedule: task.schedule,
+            trigger: task.trigger,
+            action: task.action,
+          });
+        }
+      }
+      return tasks;
+    };
+
+    proactiveManager = new ProactiveTaskManager({
+      agentExecutor,
+      getProactiveTasks,
+      actionConfigDir: resolve(process.cwd(), 'config/proactive/actions'),
+      monitorConfigDir: resolve(process.cwd(), 'config/proactive/monitors'),
+      historyDataDir: resolve(process.cwd(), 'data/proactive/history'),
+      notificationDataDir: resolve(process.cwd(), 'data/proactive/notifications'),
+    });
+
+    proactiveManager.initialize();
+    proactiveManager.start();
+
+    app.route('/api', createProactiveRoutes(proactiveManager));
+    console.log('[server] Proactive Task Manager initialized and started');
+  } catch (err) {
+    console.warn('[server] Failed to initialize Proactive Task Manager:', err);
+  }
+
+  return { app, hub, proactiveManager };
 }

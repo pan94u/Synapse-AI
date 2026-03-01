@@ -5,3 +5,4 @@ dist/
 bun.lockb
 .turbo/
 *.tsbuildinfo
+.DS_Store

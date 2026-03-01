@@ -1,0 +1,18 @@
+id: daily_financial_summary
+name: 每日财务摘要
+description: 每日自动生成财务日报，汇总收支和预算执行情况。
+
+prompt_template: |
+  今天是 {{CURRENT_DATE}}，请生成今日财务摘要。
+
+  请汇总以下内容：
+  1. 今日收入与支出明细
+  2. 本月预算执行率（已用/总预算）
+  3. 应收账款到期提醒
+  4. 大额支出审批待办
+  5. 异常交易标记
+
+  请使用数据库查询获取实际财务数据，以结构化格式输出。
+
+variables:
+  report_type: daily

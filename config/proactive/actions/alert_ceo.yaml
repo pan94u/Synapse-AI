@@ -1,0 +1,23 @@
+id: alert_ceo
+name: CEO 异常预警
+description: 当检测到财务异常事件时，自动生成预警报告给 CEO。
+
+prompt_template: |
+  今天是 {{CURRENT_DATE}}，系统检测到以下异常事件：
+
+  事件类型：{{event_name}}
+  事件来源：{{event_source}}
+  事件详情：{{event_payload}}
+
+  请分析此异常事件的影响：
+  1. 异常严重程度评估
+  2. 可能的原因分析
+  3. 建议的应对措施
+  4. 需要关注的后续风险
+
+  请查询相关数据以提供更准确的分析。
+
+variables:
+  event_name: ""
+  event_source: ""
+  event_payload: ""

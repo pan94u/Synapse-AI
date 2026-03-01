@@ -1,0 +1,18 @@
+id: weekly_attendance_summary
+name: 每周考勤汇总
+description: 每周一自动生成员工考勤周报，标注异常情况。
+
+prompt_template: |
+  今天是 {{CURRENT_DATE}}，请生成上周员工考勤汇总报告。
+
+  请包含以下内容：
+  1. 全员出勤率统计
+  2. 迟到/早退记录汇总
+  3. 请假统计（病假、事假、年假）
+  4. 加班统计及部门分布
+  5. 异常考勤标记（连续缺勤、频繁迟到等）
+
+  请查询考勤数据库获取实际数据。
+
+variables:
+  report_type: weekly

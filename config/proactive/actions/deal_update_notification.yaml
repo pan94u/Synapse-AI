@@ -1,0 +1,18 @@
+id: deal_update_notification
+name: 商机阶段变更通知
+description: 当商机阶段发生变化时，自动通知相关人员并生成分析。
+
+prompt_template: |
+  今天是 {{CURRENT_DATE}}，系统检测到商机阶段变更。
+
+  事件详情：{{event_payload}}
+
+  请分析此商机变更：
+  1. 商机基本信息（客户名称、金额、当前阶段）
+  2. 阶段变化分析（从哪个阶段到哪个阶段）
+  3. 预计成交概率变化
+  4. 下一步行动建议
+  5. 需要协调的资源或支持
+
+variables:
+  event_payload: ""

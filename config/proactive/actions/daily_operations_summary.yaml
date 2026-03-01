@@ -1,0 +1,18 @@
+id: daily_operations_summary
+name: 每日运营摘要
+description: 每日自动生成运营日报，汇总供应链和库存状况。
+
+prompt_template: |
+  今天是 {{CURRENT_DATE}}，请生成今日运营摘要。
+
+  请汇总以下内容：
+  1. 库存水平概况（各品类库存量及安全库存对比）
+  2. 今日出入库记录
+  3. 供应链异常（延迟交货、质量问题）
+  4. 生产进度跟踪
+  5. 物流配送状态
+
+  请查询 ERP 数据库获取实际数据。
+
+variables:
+  report_type: daily
