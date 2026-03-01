@@ -308,3 +308,220 @@ bun.lock                                            # 自动更新
   │     └── @synapse/server (shared, agent-core, mcp-hub, hono)
   └── @synapse/mcp-servers (@modelcontextprotocol/sdk, zod)  ← 独立进程
 ```
+
+---
+
+## Session 4 — Phase 4: 角色画像 + 合规引擎 (Pre-Hook + Post-Hook)
+
+**日期**: 2026-03-01
+**Commit**: `97cec13` feat: Phase 4 — Role Personas + Compliance Engine (Pre-Hook + Post-Hook)
+**Fix Commit**: `518fc80` fix: align persona and compliance configs with MCP-prefixed tool names
+
+### Plan（目标）
+
+让 Agent "知道为谁服务"和"什么不能做"——通过角色画像控制每个用户看到什么工具、用什么风格交互，通过合规引擎在工具执行前后实施规则校验（Pre-Hook 拦截 + Post-Hook 脱敏）。
+
+### Do（实施）
+
+1. **共享类型扩展（@synapse/shared）**
+   - `PersonaConfig`: 角色画像定义（personality, allowedTools, complianceRuleset, proactiveTasks 等）
+   - `PersonaContext`: 运行时角色上下文（systemPromptAddition, allowedTools 列表）
+   - `PreHookResult`: 4 种动作（allow / deny / require_approval / modify）
+   - `PostHookResult`: 5 种动作（pass / mask / flag / notify / revoke）
+   - `ComplianceRule`, `ComplianceRuleSet`: 合规规则内部表示
+   - `AuditTrailEntry`: 全链路审计记录（persona → pre → execution → post → latency）
+   - `MCPAuditEntry` 扩展: 新增 userId, personaId, approved 可选字段
+
+2. **@synapse/personas 包（4 个源文件）**
+   - `loader.ts`: YAML 文件加载器，snake_case → camelCase 映射
+   - `registry.ts`: `PersonaRegistry` — 注册、查询、`buildContext()` 生成运行时上下文
+     - `buildContext()` 根据 allowedTools glob 模式过滤可用工具列表
+   - `context.ts`: `buildSystemPrompt()` — 根据 personality 配置生成中文角色描述
+     - tone/focus/caution 三维度映射为具体的行为指令
+   - `index.ts`: 导出所有公开 API
+
+3. **7 个内置角色 YAML 配置**（`config/personas/`）
+   - CEO 助理: 全局只读（db_query + db_list_tables），general 规则集
+   - HR 经理助理: HRM 完整 + db 查询，hr 规则集
+   - 财务总监助理: Finance + db 完整（含 execute），finance 规则集
+   - 法务顾问助理: Legal + db 查询，legal 规则集
+   - 销售代表助理: CRM + db 查询，general 规则集
+   - 运营经理助理: ERP + db 查询，general 规则集
+   - 工程师助理: db 完整 + 5 个内置工具（file/shell/web），general 规则集
+
+4. **@synapse/compliance 包（10 个源文件）**
+   - `loader.ts`: 规则 YAML 加载器，扫描 `config/compliance/rules/` 目录
+   - `matcher.ts`: 工具名 glob 匹配器（精确匹配、`*` 通配、`|` 多模式）
+   - `evaluator.ts`: 简单表达式求值器（tokenizer + recursive descent parser）
+     - 支持: 属性访问、比较运算、AND/OR/NOT、IN/NOT IN、字面量
+     - 失败模式: 解析错误 → 警告 + fail-open（返回 true）
+   - `pre-hook.ts`: `PreHook` — 执行前校验，匹配规则 → 逐条评估 conditions → 返回第一个命中结果
+   - `post-hook.ts`: `PostHook` — 执行后校验，支持 auto_mask、mask_fields、flag_if、notify、revoke
+   - `masker.ts`: `DataMasker` — 数据脱敏器
+     - JSON 递归遍历 + 字段名模式匹配
+     - 4 种脱敏方法: middle_mask（保留前3后4）、tail_mask（保留后4）、full_mask、role_based
+     - 内置 9 种敏感字段模式（phone, mobile, id_card, salary, password 等）
+     - 纯文本回退: 正则匹配手机号（1xx****xxxx）和身份证号
+   - `engine.ts`: `ComplianceEngine` — 主类，初始化 + preCheck/postCheck 代理
+   - `audit-trail.ts`: `ComplianceAuditTrail` — 内存审计日志（最多 2000 条），支持多维查询
+   - `approval.ts`: `ApprovalManager` — 内存审批流状态机（pending → approved/denied/expired）
+   - `index.ts`: 导出所有公开 API
+
+5. **Agent-Core 集成**
+   - `AgentConfig` 新增 `personaContext?: PersonaContext`
+   - `Agent.run()/runStream()`: 注入 persona system prompt（作为首条 system message），按角色过滤工具列表
+   - `ToolExecutor` 新增 `ComplianceHooks` 接口 + `personaId`:
+     - Pre-Hook: deny → 返回错误, require_approval → 返回审批提示, modify → 替换输入
+     - Post-Hook: mask → 返回脱敏数据, flag → 附加告警, revoke → 返回错误, notify → console.log
+     - 审计: 每次执行后记录完整链路（pre → execution → post → latency）
+   - `ToolRegistry.listForPersona()`: 根据 glob 模式过滤工具定义
+   - `createAgentWithCompliance()`: 新工厂函数，组装 persona + compliance + MCP tools
+
+6. **Server 集成**
+   - `app.ts` 重构: 初始化 PersonaRegistry + ComplianceEngine + AuditTrail + ApprovalManager
+   - `routes/personas.ts`: 3 个角色 API 端点
+     - `GET /api/personas` — 列出所有角色
+     - `GET /api/personas/:id` — 角色详情
+     - `GET /api/personas/:id/tools` — 角色可用工具列表
+   - `routes/compliance.ts`: 5 个合规 API 端点
+     - `GET /api/compliance/rules` — 所有规则集
+     - `GET /api/compliance/rules/:id` — 单个规则集详情
+     - `GET /api/compliance/audit` — 审计轨迹查询（支持 personaId, toolName, limit）
+     - `GET /api/compliance/approvals` — 待审批列表
+     - `POST /api/compliance/approvals/:id/approve|deny` — 审批操作
+   - `routes/agent.ts` 重构: 接受 personaId 参数，按请求构建带角色+合规的 Agent
+
+7. **4 套合规规则 YAML 配置**（`config/compliance/rules/`）
+   - `general.yaml`（3 条）: PII 自动脱敏、db_execute 需审批、查询审计
+   - `finance.yaml`（5 条）: 报销分级审批（≤5k 放行 / ≤50k 财务审批 / >50k CEO 审批）、结算期冻结、大额付款通知、薪酬访问控制、财务数据脱敏
+   - `hr.yaml`（3 条）: 薪酬信息仅 HR+CEO+CFO 可查、员工信息脱敏、批量人事变更审批
+   - `legal.yaml`（3 条）: 合同签署前置审核、合同信息脱敏、法务敏感信息访问限制
+
+8. **Bug 修复**
+   - 角色 YAML 和规则 YAML 中的工具名需使用 MCP 前缀（`database_db_query` 而非 `db_query`）
+
+### Check（验证）
+
+| 测试项 | 结果 |
+|--------|------|
+| `bunx tsc --noEmit` (7 packages) | 7/7 通过，零错误 |
+| `GET /api/personas` | ✅ 返回 7 个角色 |
+| `GET /api/personas/finance-controller` | ✅ 完整配置含 personality, allowedTools, proactiveTasks |
+| `GET /api/personas/finance-controller/tools` | ✅ 3 个工具 (db_query, db_execute, db_list_tables) |
+| `GET /api/personas/engineer/tools` | ✅ 8 个工具 (5 内置 + 3 MCP) |
+| `GET /api/personas/ceo/tools` | ✅ 2 个工具 (db_query, db_list_tables — 无 execute) |
+| `GET /api/personas/sales-rep/tools` | ✅ 2 个工具 (db_query, db_list_tables — 无 execute) |
+| `GET /api/personas/nonexistent` | ✅ 404 错误 |
+| `GET /api/compliance/rules` | ✅ 4 个规则集 (general:3, hr:3, finance:5, legal:3 = 14 条规则) |
+| `GET /api/compliance/rules/finance` | ✅ 5 条规则详情 |
+| `GET /api/compliance/audit` (初始) | ✅ 空列表 |
+| `GET /api/compliance/approvals` (初始) | ✅ 空列表 |
+| Agent + CEO 列表 | ✅ 调用 db_list_tables 成功，1 次 tool call |
+| Agent + CEO 查询员工 | ✅ salary 字段被 Post-Hook 脱敏为 `****` |
+| CEO 尝试写操作 | ✅ 工具列表中无 db_execute，模型未尝试 |
+| Agent + finance-controller 写操作 | ✅ db_execute 成功（finance 规则集条件未匹配） |
+| Agent + engineer db_execute | ✅ Pre-Hook require_approval 拦截 |
+| Agent + engineer 查询含 phone | ✅ salary + phone 均被脱敏 |
+| 审计轨迹查询 | ✅ 8 条记录，含完整 pre/post 结果和 maskedFields 细节 |
+| 审计 latency | ✅ 3-6ms（含 Pre-Hook + 执行 + Post-Hook） |
+
+### Act（经验沉淀）
+
+- **MCP 工具名前缀**: MCP Hub 聚合的工具名带 `${serverId}_` 前缀（如 `database_db_query`），角色 YAML 和规则 YAML 中的 tool 匹配模式必须使用完整前缀名
+- **规则条件与工具输入**: 规则 conditions 中的 `input.amount` 只在工具参数包含 `amount` 字段时生效；对于 `db_execute` 这类以 SQL 为输入的工具，金额条件不会匹配 — 这是设计预期，未来 Phase 8 可在业务层 MCP Server 中规范化输入
+- **表达式求值器 fail-open**: 解析失败默认返回 true（allow/pass），避免规则配置错误导致系统瘫痪
+- **Post-Hook 合并策略**: 多条 post 规则按优先级合并（mask > flag > notify > pass），确保脱敏永远优先
+- **角色 system prompt 注入**: 作为首条 `role: 'system'` 消息插入对话历史，ChatMessage 类型已原生支持 system role
+- **内存审计上限**: 2000 条 cap 防止内存泄漏，Phase 8 持久化到文件/DB
+
+### 文件变更表
+
+**新建 33 个文件**:
+```
+# Shared types
+packages/shared/src/types/persona.ts              # Persona 共享类型 (PersonaConfig, PersonaContext)
+packages/shared/src/types/compliance.ts           # Compliance 共享类型 (PreHookResult, PostHookResult, etc.)
+
+# Personas package
+packages/personas/package.json                     # 包配置 (依赖: shared, yaml)
+packages/personas/tsconfig.json                    # TS 配置
+packages/personas/src/index.ts                     # 公开 API 导出
+packages/personas/src/loader.ts                    # YAML 加载器 (snake_case → camelCase)
+packages/personas/src/registry.ts                  # 角色注册表 + buildContext()
+packages/personas/src/context.ts                   # System prompt 构建器
+
+# Compliance package
+packages/compliance/package.json                   # 包配置 (依赖: shared, yaml)
+packages/compliance/tsconfig.json                  # TS 配置
+packages/compliance/src/index.ts                   # 公开 API 导出
+packages/compliance/src/loader.ts                  # 规则 YAML 加载器
+packages/compliance/src/matcher.ts                 # 工具名 glob 匹配器
+packages/compliance/src/evaluator.ts               # 表达式求值器 (tokenizer + parser)
+packages/compliance/src/pre-hook.ts                # Pre-Hook 执行前校验
+packages/compliance/src/post-hook.ts               # Post-Hook 执行后校验
+packages/compliance/src/masker.ts                  # 数据脱敏器 (4 种方法)
+packages/compliance/src/engine.ts                  # 合规引擎主类
+packages/compliance/src/audit-trail.ts             # 审计轨迹 (内存, max 2000)
+packages/compliance/src/approval.ts                # 审批流管理器 (内存状态机)
+
+# Persona configs
+config/personas/ceo.yaml                           # CEO 助理
+config/personas/hr-manager.yaml                    # HR 经理助理
+config/personas/finance-controller.yaml            # 财务总监助理
+config/personas/legal-counsel.yaml                 # 法务顾问助理
+config/personas/sales-rep.yaml                     # 销售代表助理
+config/personas/ops-manager.yaml                   # 运营经理助理
+config/personas/engineer.yaml                      # 工程师助理
+
+# Compliance rule configs
+config/compliance/rules/general.yaml               # 通用规则 (3 条)
+config/compliance/rules/finance.yaml               # 财务规则 (5 条)
+config/compliance/rules/hr.yaml                    # 人事规则 (3 条)
+config/compliance/rules/legal.yaml                 # 法务规则 (3 条)
+
+# Server routes
+packages/server/src/routes/personas.ts             # 角色 API (3 endpoints)
+packages/server/src/routes/compliance.ts           # 合规 API (5 endpoints)
+```
+
+**修改 10 个文件**:
+```
+packages/shared/src/index.ts                       # +17 行: 导出 Persona + Compliance 类型
+packages/shared/src/types/mcp.ts                   # +3 行: MCPAuditEntry 新增 userId, personaId, approved
+packages/agent-core/src/agent/types.ts             # +2 行: AgentConfig.personaContext
+packages/agent-core/src/agent/agent.ts             # +13 行: injectPersonaPrompt() + persona 工具过滤
+packages/agent-core/src/tools/executor.ts          # 重写: ComplianceHooks + pre/post hook + audit
+packages/agent-core/src/tools/registry.ts          # +10 行: listForPersona()
+packages/agent-core/src/index.ts                   # +35 行: createAgentWithCompliance() + ComplianceHooks 导出
+packages/server/src/app.ts                         # 重写: 初始化 Persona + Compliance + 新路由
+packages/server/src/routes/agent.ts                # 重写: personaId 参数 + 按请求构建 Agent
+packages/server/package.json                       # +2 行: @synapse/personas, @synapse/compliance 依赖
+```
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 新建文件 | 33 |
+| 修改文件 | 10 |
+| 代码行数 (净增) | +2,153 |
+| 新增 Packages | 2 (`personas`, `compliance`) |
+| 总 Packages | 7 (`shared`, `agent-core`, `mcp-hub`, `mcp-servers`, `personas`, `compliance`, `server`) |
+| 角色模板 | 7 个 |
+| 合规规则 | 14 条 (4 个规则集) |
+| 新增 API 端点 | 8 个 (3 persona + 5 compliance) |
+| Commits | 2 (`97cec13`, `518fc80`) |
+| 类型检查 | 7/7 通过 |
+| 外部依赖新增 | yaml ^2.7.0 |
+
+### 依赖拓扑
+
+```
+@synapse/shared (无依赖)
+  ├── @synapse/agent-core (shared, openai)
+  ├── @synapse/personas (shared, yaml)                    ← 新建
+  ├── @synapse/compliance (shared, yaml)                  ← 新建
+  ├── @synapse/mcp-hub (shared, @modelcontextprotocol/sdk, zod)
+  │     └── @synapse/server (shared, agent-core, mcp-hub, personas, compliance, hono)
+  └── @synapse/mcp-servers (@modelcontextprotocol/sdk, zod)  ← 独立进程
+```

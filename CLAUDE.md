@@ -227,11 +227,15 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 │   ├── agent-core/      # ✅ Agent 引擎 (Model Router, Agent, Tools)
 │   ├── mcp-hub/         # ✅ MCP 中心 (Hub, Client, Registry, Health, Audit, RateLimit)
 │   ├── mcp-servers/     # ✅ MCP Server 适配器 (database, http-api)
-│   ├── server/          # ✅ Hono API 服务端 (chat, agent, mcp 路由)
+│   ├── personas/        # ✅ 角色画像 (loader, registry, context builder)
+│   ├── compliance/      # ✅ 合规引擎 (pre-hook, post-hook, masker, evaluator)
+│   ├── server/          # ✅ Hono API 服务端 (chat, agent, mcp, personas, compliance 路由)
 │   ├── web/             # 📋 Next.js 前端 (Phase 10)
 │   └── knowledge/       # 📋 知识库引擎 (Phase 5)
 ├── config/
-│   └── mcp-servers/     # ✅ MCP Server 配置 (database.json, http-api.json)
+│   ├── mcp-servers/     # ✅ MCP Server 配置 (database.json, http-api.json)
+│   ├── personas/        # ✅ 7 个角色 YAML (ceo, hr, finance, legal, sales, ops, engineer)
+│   └── compliance/rules/# ✅ 4 套合规规则 YAML (general, finance, hr, legal)
 ├── PLAN.md              # 总体技术方案
 ├── STRATEGY-5Y.md       # 五年战略规划
 ├── DISCUSSION-LOG.md    # 讨论演化记录
@@ -261,7 +265,7 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 | Phase 1 | 基础框架 (Monorepo + Model Router + 流式 Chat) | ✅ 完成 |
 | Phase 2 | 工具系统 (Tool Registry + 内置工具 + Agent tool loop) | ✅ 完成 |
 | Phase 3 | MCP Hub + 基础连接器 (database + http-api) | ✅ 完成 |
-| Phase 4 | 角色画像 + 合规引擎 (Pre-Hook + Post-Hook) | 📋 待开始 |
+| Phase 4 | 角色画像 + 合规引擎 (Pre-Hook + Post-Hook) | ✅ 完成 |
 | Phase 5 | 组织记忆 + 个人记忆 + 知识库 | 📋 |
 | Phase 6 | 主动智能 (定时/事件/阈值) | 📋 |
 | Phase 6.5 | 决策智能 (数据→洞察→决策→战略) | 📋 |
