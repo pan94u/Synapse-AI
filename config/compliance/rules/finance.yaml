@@ -4,7 +4,7 @@ rules:
     name: 报销分级审批
     phase: pre
     when:
-      tool: "fin_submit_expense|db_execute"
+      tool: "fin_submit_expense|database_db_execute"
     conditions:
       - if: "input.amount <= 5000"
         then: allow
@@ -23,7 +23,7 @@ rules:
     name: 结算期冻结
     phase: pre
     when:
-      tool: "fin_*|db_execute"
+      tool: "fin_*|database_db_execute"
       condition: "system.is_settlement_period == true"
     conditions:
       - if: "true"
@@ -52,7 +52,7 @@ rules:
     name: 薪酬访问控制
     phase: pre
     when:
-      tool: "db_query"
+      tool: "database_db_query"
       condition: "persona.id NOT IN ['hr-manager', 'ceo', 'finance-controller']"
     conditions:
       - if: "true"
@@ -63,7 +63,7 @@ rules:
     name: 财务数据脱敏
     phase: post
     when:
-      tool: "db_query|fin_*"
+      tool: "database_db_query|fin_*"
     actions:
       - auto_mask: true
       - mask_fields:

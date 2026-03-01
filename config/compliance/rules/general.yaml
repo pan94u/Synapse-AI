@@ -13,7 +13,7 @@ rules:
     name: 批量写操作审计
     phase: pre
     when:
-      tool: "db_execute"
+      tool: "database_db_execute"
       action_type: write
     conditions:
       - if: "true"
@@ -26,7 +26,7 @@ rules:
     name: 敏感查询审计
     phase: pre
     when:
-      tool: "db_query"
+      tool: "database_db_query"
     conditions:
       - if: "true"
         then: allow

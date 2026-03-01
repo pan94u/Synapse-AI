@@ -17,9 +17,9 @@ allowed_mcp_servers:
   - http-api
 
 allowed_tools:
-  - "db_query"
-  - "db_list_tables"
-  - "db_describe_table"
+  - "database_db_query"
+  - "database_db_list_tables"
+  - "database_db_describe_table"
   - "crm_*"
   - "http_request"
 

@@ -4,7 +4,7 @@ rules:
     name: 薪酬信息访问限制
     phase: pre
     when:
-      tool: "hrm_*|db_query"
+      tool: "hrm_*|database_db_query"
       condition: "persona.id NOT IN ['hr-manager', 'ceo', 'finance-controller']"
     conditions:
       - if: "true"
@@ -16,7 +16,7 @@ rules:
     name: 员工信息脱敏
     phase: post
     when:
-      tool: "hrm_*|db_query"
+      tool: "hrm_*|database_db_query"
     actions:
       - auto_mask: true
       - mask_fields:
@@ -38,7 +38,7 @@ rules:
     name: 批量人事变更审批
     phase: pre
     when:
-      tool: "hrm_batch_*|db_execute"
+      tool: "hrm_batch_*|database_db_execute"
     conditions:
       - if: "true"
         then: require_approval

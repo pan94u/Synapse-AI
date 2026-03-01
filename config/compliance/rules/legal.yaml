@@ -16,7 +16,7 @@ rules:
     name: 合同信息脱敏
     phase: post
     when:
-      tool: "legal_*|db_query"
+      tool: "legal_*|database_db_query"
     actions:
       - auto_mask: true
       - mask_fields:

@@ -17,7 +17,7 @@ allowed_mcp_servers:
   - http-api
 
 allowed_tools:
-  - "db_*"
+  - "database_db_*"
   - "http_request"
   - "file_read"
   - "file_write"
