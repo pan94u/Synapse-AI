@@ -15,6 +15,7 @@
     "@synapse/compliance": "workspace:*",
     "@synapse/memory": "workspace:*",
     "@synapse/proactive": "workspace:*",
+    "@synapse/decision-engine": "workspace:*",
     "hono": "^4.7.0"
   }
 }

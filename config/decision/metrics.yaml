@@ -1,0 +1,95 @@
+metrics:
+  - id: revenue
+    name: 营收
+    description: 每日营收汇总，包含各业务线明细
+    query: "请查询当前营收数据，包括今日营收总额、各业务线营收、同比和环比变化。"
+    frequency: daily
+    unit: "元"
+    alert_rules:
+      - condition: "value < 0"
+        severity: critical
+        message: "营收为负值: {value} 元"
+      - condition: "value < 500000"
+        severity: warning
+        message: "营收低于预警线: {value} 元"
+
+  - id: gross_margin
+    name: 毛利率
+    description: 整体毛利率水平
+    query: "请查询当前毛利率数据，包括整体毛利率、各产品线毛利率、与上月对比。"
+    frequency: daily
+    unit: "%"
+    alert_rules:
+      - condition: "value < 20"
+        severity: critical
+        message: "毛利率跌破 20%: {value}%"
+      - condition: "value < 30"
+        severity: warning
+        message: "毛利率低于 30%: {value}%"
+
+  - id: order_count
+    name: 订单量
+    description: 每日新订单数量统计
+    query: "请查询今日订单量数据，包括总订单数、各渠道订单数、同比变化。"
+    frequency: daily
+    unit: "单"
+
+  - id: customer_acquisition
+    name: 新客获取
+    description: 新客户获取数量与成本
+    query: "请查询新客户获取数据，包括新客数量、获客成本(CAC)、渠道分布。"
+    frequency: weekly
+    unit: "人"
+
+  - id: return_rate
+    name: 退货率
+    description: 各区域退货率数据
+    query: "请查询退货率数据，包括整体退货率、各区域退货率（东区/西区/南区/北区）、退货原因分布。"
+    frequency: daily
+    unit: "%"
+    alert_rules:
+      - condition: "value > 10"
+        severity: critical
+        message: "退货率超过 10%: {value}%"
+      - condition: "value > 5"
+        severity: warning
+        message: "退货率偏高: {value}%"
+
+  - id: inventory_turnover
+    name: 库存周转率
+    description: 库存周转天数与效率
+    query: "请查询库存周转数据，包括整体周转天数、各品类周转率、滞销品占比。"
+    frequency: weekly
+    unit: "天"
+
+  - id: cash_flow
+    name: 现金流
+    description: 经营现金流状况
+    query: "请查询现金流数据，包括经营性现金流净额、现金余额、应收账款周转天数。"
+    frequency: weekly
+    unit: "元"
+
+  - id: employee_satisfaction
+    name: 员工满意度
+    description: 员工满意度与离职率
+    query: "请查询员工满意度数据，包括整体满意度评分、各部门满意度、近期离职率。"
+    frequency: monthly
+    unit: "分"
+
+  - id: customer_nps
+    name: 客户 NPS
+    description: 客户净推荐值
+    query: "请查询客户 NPS 数据，包括整体 NPS 得分、各产品线 NPS、关键客户反馈摘要。"
+    frequency: monthly
+    unit: "分"
+
+  - id: cost_ratio
+    name: 费用率
+    description: 三项费用率（销售/管理/财务）
+    query: "请查询费用率数据，包括销售费用率、管理费用率、财务费用率及同比变化。"
+    frequency: monthly
+    unit: "%"
+    alert_rules:
+      - condition: "value > 40"
+        severity: warning
+        message: "综合费用率偏高: {value}%"

@@ -26,6 +26,14 @@
         "yaml": "^2.7.0",
       },
     },
+    "packages/decision-engine": {
+      "name": "@synapse/decision-engine",
+      "version": "0.1.0",
+      "dependencies": {
+        "@synapse/shared": "workspace:*",
+        "yaml": "^2.7.0",
+      },
+    },
     "packages/mcp-hub": {
       "name": "@synapse/mcp-hub",
       "version": "0.1.0",
@@ -72,6 +80,7 @@
       "dependencies": {
         "@synapse/agent-core": "workspace:*",
         "@synapse/compliance": "workspace:*",
+        "@synapse/decision-engine": "workspace:*",
         "@synapse/mcp-hub": "workspace:*",
         "@synapse/memory": "workspace:*",
         "@synapse/personas": "workspace:*",
@@ -93,6 +102,8 @@
     "@synapse/agent-core": ["@synapse/agent-core@workspace:packages/agent-core"],
 
     "@synapse/compliance": ["@synapse/compliance@workspace:packages/compliance"],
+
+    "@synapse/decision-engine": ["@synapse/decision-engine@workspace:packages/decision-engine"],
 
     "@synapse/mcp-hub": ["@synapse/mcp-hub@workspace:packages/mcp-hub"],
 

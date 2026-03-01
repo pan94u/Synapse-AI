@@ -7,6 +7,7 @@ import { PersonaRegistry, loadAllPersonas } from '@synapse/personas';
 import { ComplianceEngine, ComplianceAuditTrail, ApprovalManager } from '@synapse/compliance';
 import { OrgMemoryStore, PersonalMemoryStore, KnowledgeBase } from '@synapse/memory';
 import { ProactiveTaskManager } from '@synapse/proactive';
+import { DecisionEngine } from '@synapse/decision-engine';
 import type { ProactiveTaskConfig } from '@synapse/shared';
 import { chatRoutes } from './routes/chat.js';
 import { createAgentRoutes } from './routes/agent.js';
@@ -17,8 +18,9 @@ import { createOrgMemoryRoutes } from './routes/org-memory.js';
 import { createMemoryRoutes } from './routes/memory.js';
 import { createKnowledgeRoutes } from './routes/knowledge.js';
 import { createProactiveRoutes } from './routes/proactive.js';
+import { createDecisionRoutes } from './routes/decision.js';
 
-export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveManager?: ProactiveTaskManager }> {
+export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveManager?: ProactiveTaskManager; decisionEngine?: DecisionEngine }> {
   const app = new Hono();
   const hub = new MCPHub();
 
@@ -202,5 +204,88 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
     console.warn('[server] Failed to initialize Proactive Task Manager:', err);
   }
 
-  return { app, hub, proactiveManager };
+  // Initialize Decision Engine
+  let decisionEngine: DecisionEngine | undefined;
+  try {
+    const { createAgentWithCompliance } = await import('@synapse/agent-core');
+    const mcpTools = agentRouteDeps.mcpTools;
+
+    // Reuse same agentExecutor pattern
+    const decisionAgentExecutor = async (personaId: string, userMessage: string) => {
+      const allToolNames = [
+        ...(mcpTools ? mcpTools.map((t) => t.definition.name) : []),
+        'file_read', 'file_write', 'file_search', 'shell_exec', 'web_fetch',
+        ...(orgMemory ? ['memory_read', 'memory_write', 'knowledge_search'] : []),
+      ];
+      const personaContext = personaRegistry.buildContext(personaId, allToolNames);
+      if (!personaContext) {
+        throw new Error(`Persona "${personaId}" not found`);
+      }
+
+      let complianceHooks: import('@synapse/agent-core').ComplianceHooks | undefined;
+      if (complianceEngine && auditTrail) {
+        const rulesetId = personaContext.complianceRuleset;
+        complianceHooks = {
+          preCheck: (params) => complianceEngine.preCheck({ ...params, rulesetId }),
+          postCheck: (params) => complianceEngine.postCheck({ ...params, rulesetId }),
+          recordAudit: (entry) => auditTrail.record(entry),
+        };
+      }
+
+      let memoryToolDeps: import('@synapse/agent-core').MemoryToolDeps | undefined;
+      if (orgMemory && personalMemory && knowledgeBase) {
+        const personaConfig = personaRegistry.get(personaId);
+        memoryToolDeps = {
+          orgMemory, personalMemory, knowledgeBase,
+          personaId,
+          orgMemoryAccess: personaConfig?.orgMemoryAccess ?? [],
+        };
+      }
+
+      const agent = createAgentWithCompliance({
+        mcpTools,
+        personaContext,
+        complianceHooks,
+        memoryToolDeps,
+      });
+
+      const result = await agent.run([{ role: 'user', content: userMessage }]);
+      return {
+        content: result.message.content,
+        model: result.model,
+        toolCallsExecuted: result.toolCallsExecuted,
+      };
+    };
+
+    // Optional: connect insights to proactive notification system
+    const notifyCallback = proactiveManager
+      ? (personaId: string, title: string, content: string, severity: string) => {
+          proactiveManager!.getNotificationStore().create({
+            personaId,
+            title,
+            content,
+            source: 'decision-engine',
+            severity: severity as 'info' | 'warning' | 'critical',
+          });
+        }
+      : undefined;
+
+    decisionEngine = new DecisionEngine({
+      agentExecutor: decisionAgentExecutor,
+      metricsConfigDir: resolve(process.cwd(), 'config/decision'),
+      strategyConfigDir: resolve(process.cwd(), 'config/decision'),
+      dataDir: resolve(process.cwd(), 'data/decision'),
+      notifyCallback,
+    });
+
+    decisionEngine.initialize();
+    decisionEngine.start();
+
+    app.route('/api', createDecisionRoutes(decisionEngine));
+    console.log('[server] Decision Engine initialized and started');
+  } catch (err) {
+    console.warn('[server] Failed to initialize Decision Engine:', err);
+  }
+
+  return { app, hub, proactiveManager, decisionEngine };
 }

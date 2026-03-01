@@ -63,3 +63,12 @@ export type {
   ProactiveEvent,
   ProactiveNotification,
 } from './types/proactive.js';
+
+export type {
+  MetricSnapshot,
+  MetricDefinition,
+  Insight,
+  DecisionRecord,
+  StrategyObjective,
+  DecisionReport,
+} from './types/decision.js';

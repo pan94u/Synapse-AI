@@ -1,0 +1,55 @@
+vision: "成为行业领先的智能化企业"
+fiscal_year: FY2026
+
+objectives:
+  - id: obj-revenue
+    name: 营收增长
+    target: "同比增长30%，全年营收突破1亿元"
+    key_results:
+      - id: kr-revenue-q1
+        name: Q1完成年度目标的25%
+        metric_id: revenue
+        target_value: 25000000
+      - id: kr-margin-maintain
+        name: 毛利率维持在35%以上
+        metric_id: gross_margin
+        target_value: 35
+
+  - id: obj-efficiency
+    name: 运营效率提升
+    target: "运营效率全面提升，费用率降低5个百分点"
+    key_results:
+      - id: kr-return-rate
+        name: 退货率控制在3%以内
+        metric_id: return_rate
+        target_value: 3
+      - id: kr-inventory
+        name: 库存周转天数缩短至30天
+        metric_id: inventory_turnover
+        target_value: 30
+      - id: kr-cost-ratio
+        name: 综合费用率降至30%以下
+        metric_id: cost_ratio
+        target_value: 30
+
+  - id: obj-customer
+    name: 客户体验卓越
+    target: "NPS提升至60+，客户留存率95%+"
+    key_results:
+      - id: kr-nps
+        name: NPS达到60分
+        metric_id: customer_nps
+        target_value: 60
+      - id: kr-new-customer
+        name: 季度新客获取5000+
+        metric_id: customer_acquisition
+        target_value: 5000
+
+  - id: obj-talent
+    name: 人才发展
+    target: "打造高满意度团队，满意度评分85+"
+    key_results:
+      - id: kr-satisfaction
+        name: 员工满意度达到85分
+        metric_id: employee_satisfaction
+        target_value: 85

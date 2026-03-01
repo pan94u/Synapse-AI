@@ -2,11 +2,12 @@ import { createApp } from './app.js';
 
 const port = Number(process.env.PORT) || 3001;
 
-const { app, hub, proactiveManager } = await createApp();
+const { app, hub, proactiveManager, decisionEngine } = await createApp();
 
 // Graceful shutdown
 const shutdown = () => {
   console.log('[server] Shutting down...');
+  decisionEngine?.stop();
   proactiveManager?.stop();
   hub?.stop();
   process.exit(0);
