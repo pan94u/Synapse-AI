@@ -216,6 +216,11 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 - MiniMax 2.5 的 `base_url` 和 Claude API 的 `base_url` 不同，需在 Model Router 中正确配置
 - 两个 Provider 的 `tool_calling` 格式可能有微小差异，统一在 adapter 层处理
 
+### 7.3 跨包依赖与结构类型
+
+- **工具 deps 避免循环依赖**: `agent-core` 的 memory tools 需要 `@synapse/memory` 的 store 类，但不应直接依赖该包。用结构类型接口（`OrgMemoryStoreAdapter` 等）替代 import，由 `server` 层桥接注入
+- **文件系统存储 + 内存索引**: `_index.json` 加速搜索，避免每次遍历全量 JSON 文件。但写操作需同步更新索引，否则数据不一致
+
 ---
 
 ## 八、项目结构速查
@@ -229,9 +234,13 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 │   ├── mcp-servers/     # ✅ MCP Server 适配器 (database, http-api)
 │   ├── personas/        # ✅ 角色画像 (loader, registry, context builder)
 │   ├── compliance/      # ✅ 合规引擎 (pre-hook, post-hook, masker, evaluator)
-│   ├── server/          # ✅ Hono API 服务端 (chat, agent, mcp, personas, compliance 路由)
-│   ├── web/             # 📋 Next.js 前端 (Phase 10)
-│   └── knowledge/       # 📋 知识库引擎 (Phase 5)
+│   ├── memory/          # ✅ 记忆系统 (OrgMemory, PersonalMemory, KnowledgeBase)
+│   ├── server/          # ✅ Hono API 服务端 (chat, agent, mcp, personas, compliance, memory 路由)
+│   └── web/             # 📋 Next.js 前端 (Phase 10)
+├── data/
+│   ├── org-memory/      # ✅ 组织记忆数据 (policies, decisions, lessons, knowledge)
+│   ├── memory/          # ✅ 个人记忆数据 ({personaId}/facts.json, conversations.json)
+│   └── knowledge/       # ✅ 知识库文档数据 ({id}.json + _index.json)
 ├── config/
 │   ├── mcp-servers/     # ✅ MCP Server 配置 (database.json, http-api.json)
 │   ├── personas/        # ✅ 7 个角色 YAML (ceo, hr, finance, legal, sales, ops, engineer)
@@ -266,7 +275,7 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 | Phase 2 | 工具系统 (Tool Registry + 内置工具 + Agent tool loop) | ✅ 完成 |
 | Phase 3 | MCP Hub + 基础连接器 (database + http-api) | ✅ 完成 |
 | Phase 4 | 角色画像 + 合规引擎 (Pre-Hook + Post-Hook) | ✅ 完成 |
-| Phase 5 | 组织记忆 + 个人记忆 + 知识库 | 📋 |
+| Phase 5 | 组织记忆 + 个人记忆 + 知识库 | ✅ 完成 |
 | Phase 6 | 主动智能 (定时/事件/阈值) | 📋 |
 | Phase 6.5 | 决策智能 (数据→洞察→决策→战略) | 📋 |
 | Phase 7 | Skill 系统 + 管理器 | 📋 |

@@ -525,3 +525,162 @@ packages/server/package.json                       # +2 行: @synapse/personas, 
   │     └── @synapse/server (shared, agent-core, mcp-hub, personas, compliance, hono)
   └── @synapse/mcp-servers (@modelcontextprotocol/sdk, zod)  ← 独立进程
 ```
+
+---
+
+## Session 5 — Phase 5: 组织记忆 + 个人记忆 + 知识库
+
+**日期**: 2026-03-01
+**Commit**: `28ee1e7` feat: Phase 5 — Org Memory + Personal Memory + Knowledge Base
+
+### Plan（目标）
+
+让 Agent 具备记忆能力——组织级知识共享（制度、决策、经验、最佳实践）的 CRUD + 搜索，个人记忆（偏好/事实存取 + 对话摘要），个人知识库（文档导入 + 关键词搜索），以及 3 个新内置工具让 Agent 在对话中调用记忆系统。
+
+### Do（实施）
+
+1. **共享类型扩展（@synapse/shared）**
+   - `OrgMemoryEntry`: 组织记忆条目（id, category, title, content, tags, createdBy, timestamps）
+   - `PersonalFact`: 个人偏好/事实（id, personaId, key, value, timestamps）
+   - `ConversationSummary`: 对话摘要（id, personaId, date, summary, topics）
+   - `KnowledgeDocument`: 知识库文档（id, personaId, title, content, source, tags, timestamps）
+
+2. **@synapse/memory 包（4 个源文件）**
+   - `org-memory.ts`: `OrgMemoryStore` — 4 类组织知识（policies/decisions/lessons/knowledge）CRUD
+     - 文件系统存储: `data/org-memory/{category}/{id}.json`
+     - 内存索引: `_index.json` 加速搜索（title + tags + content 子串匹配）
+     - `listByAccess()`: 根据 persona `orgMemoryAccess` glob 模式过滤可见条目
+   - `personal-memory.ts`: `PersonalMemoryStore` — 按 personaId 隔离
+     - facts: `data/memory/{personaId}/facts.json`（setFact 幂等更新）
+     - conversations: `data/memory/{personaId}/conversations.json`（按时间倒序）
+   - `knowledge-base.ts`: `KnowledgeBase` — 文档导入 + 关键词搜索
+     - 存储: `data/knowledge/{id}.json` + `_index.json`
+     - 搜索: title + tags 索引快筛 + content 全文回退
+   - `index.ts`: 导出所有公开 API
+
+3. **3 个新内置工具（agent-core）**
+   - `memory-types.ts`: `MemoryToolDeps` 接口 + 结构类型适配器（`OrgMemoryStoreAdapter` 等）
+     - 使用结构类型避免 agent-core → memory 直接依赖
+   - `memory-read.ts`: `createMemoryReadTool()` — scope=personal 读偏好 / scope=org 搜索组织知识
+   - `memory-write.ts`: `createMemoryWriteTool()` — scope=personal 写偏好 / scope=org 创建条目
+   - `knowledge-search.ts`: `createKnowledgeSearchTool()` — 搜索个人知识库文档
+   - `registerMemoryTools()`: 批量注册 3 个工具到 ToolRegistry
+   - `createAgentWithCompliance()` 扩展: 新增 `memoryToolDeps` 可选参数
+
+4. **Server 集成 — 17 个新 API 端点**
+   - `routes/org-memory.ts`（6 个端点）:
+     - `GET /api/org-memory` — 列出条目（可选 category 过滤）
+     - `GET /api/org-memory/search?q=xxx` — 关键词搜索
+     - `GET /api/org-memory/:id` — 单条详情
+     - `POST /api/org-memory` — 创建条目
+     - `PUT /api/org-memory/:id` — 更新条目
+     - `DELETE /api/org-memory/:id` — 删除条目
+   - `routes/memory.ts`（6 个端点）:
+     - `GET /api/memory/:personaId/facts` — 列出偏好
+     - `GET /api/memory/:personaId/facts/:key` — 获取特定偏好
+     - `PUT /api/memory/:personaId/facts/:key` — 设置偏好
+     - `DELETE /api/memory/:personaId/facts/:key` — 删除偏好
+     - `GET /api/memory/:personaId/conversations` — 对话摘要列表
+     - `POST /api/memory/:personaId/conversations` — 添加摘要
+   - `routes/knowledge.ts`（5 个端点）:
+     - `GET /api/knowledge` — 列出文档
+     - `GET /api/knowledge/search?q=xxx` — 搜索文档
+     - `POST /api/knowledge` — 导入文档
+     - `GET /api/knowledge/:id` — 文档详情
+     - `DELETE /api/knowledge/:id` — 删除文档
+   - `app.ts`: 初始化 3 个 Memory stores + 注册路由 + 传递给 Agent 路由
+   - `routes/agent.ts`: 从 PersonaConfig 读取 `orgMemoryAccess`，构建 `memoryToolDeps` 注入 Agent
+
+5. **种子数据**
+   - `data/org-memory/policies/expense-policy.json` — 员工报销制度（审批流程、标准）
+   - `data/org-memory/knowledge/code-standards.json` — 代码规范与最佳实践
+   - `data/org-memory/_index.json` — 索引文件
+
+### Check（验证）
+
+| 测试项 | 结果 |
+|--------|------|
+| `bunx tsc --noEmit` (8 packages) | 8/8 通过，零错误 |
+| `bun install` 依赖安装 | 成功，136 packages |
+| shared 类型导出 | 4 个新 Memory 类型正确导出 |
+| memory 包编译 | OrgMemoryStore, PersonalMemoryStore, KnowledgeBase 零错误 |
+| agent-core 结构类型 | MemoryToolDeps 使用适配器接口，无循环依赖 |
+| server 路由注册 | 17 个新端点 + memory stores 注入 Agent 路由 |
+
+### Act（经验沉淀）
+
+- **结构类型规避循环依赖**: agent-core 的 memory tools 需要 memory stores 的方法签名，但不应直接 import `@synapse/memory`。定义 `OrgMemoryStoreAdapter` 等结构接口，由 server 层注入实际实例，TypeScript 的 structural typing 自动匹配
+- **文件系统 + 索引模式**: 每个 store 维护 `_index.json` 做快速筛选（title + tags），content 全文匹配作为回退。写操作必须同步更新索引
+- **工厂函数 + 闭包注入**: memory tools 使用 `createXxxTool(deps)` 模式，通过闭包捕获 stores 和 personaId，避免修改 Tool 接口
+- **orgMemoryAccess 权限模型**: persona YAML 已有 `org_memory_access` 字段（如 CEO: `company/*`, `strategy/*`），`listByAccess()` 做 glob 映射到 category 过滤
+
+### 文件变更表
+
+**新建 15 个文件**:
+```
+# Shared types
+packages/shared/src/types/memory.ts              # Memory 共享类型 (4 interfaces)
+
+# Memory package
+packages/memory/package.json                      # 包配置 (依赖: shared)
+packages/memory/tsconfig.json                     # TS 配置
+packages/memory/src/index.ts                      # 公开 API 导出
+packages/memory/src/org-memory.ts                 # 组织记忆 CRUD + 搜索 + 权限过滤
+packages/memory/src/personal-memory.ts            # 个人记忆 (facts + conversations)
+packages/memory/src/knowledge-base.ts             # 知识库 CRUD + 搜索
+
+# New built-in tools
+packages/agent-core/src/tools/built-in/memory-types.ts     # MemoryToolDeps + 结构适配接口
+packages/agent-core/src/tools/built-in/memory-read.ts      # memory_read 工具
+packages/agent-core/src/tools/built-in/memory-write.ts     # memory_write 工具
+packages/agent-core/src/tools/built-in/knowledge-search.ts # knowledge_search 工具
+
+# Server routes
+packages/server/src/routes/org-memory.ts          # 组织记忆 API (6 endpoints)
+packages/server/src/routes/memory.ts              # 个人记忆 API (6 endpoints)
+packages/server/src/routes/knowledge.ts           # 知识库 API (5 endpoints)
+
+# Seed data
+data/org-memory/_index.json                       # 索引
+data/org-memory/policies/expense-policy.json      # 报销制度
+data/org-memory/knowledge/code-standards.json     # 代码规范
+```
+
+**修改 7 个文件**:
+```
+packages/shared/src/index.ts                      # +7 行: 导出 Memory 类型
+packages/agent-core/src/tools/built-in/index.ts   # +13 行: registerMemoryTools()
+packages/agent-core/src/index.ts                  # +16 行: 导出 memory tools + MemoryToolDeps + memoryToolDeps option
+packages/server/package.json                      # +1 行: @synapse/memory 依赖
+packages/server/src/app.ts                        # +21 行: 初始化 Memory stores + 新路由 + 传递 deps
+packages/server/src/routes/agent.ts               # +19 行: 构建 memoryToolDeps + 注入 Agent
+bun.lock                                          # 自动更新
+```
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 新建文件 | 15 (+3 seed data) |
+| 修改文件 | 7 |
+| 代码行数 (净增) | +1,070 |
+| 新增 Packages | 1 (`memory`) |
+| 总 Packages | 8 (`shared`, `agent-core`, `mcp-hub`, `mcp-servers`, `personas`, `compliance`, `memory`, `server`) |
+| 新增内置工具 | 3 (`memory_read`, `memory_write`, `knowledge_search`) |
+| 内置工具总计 | 8 (5 原有 + 3 新增) |
+| 新增 API 端点 | 17 (6 org-memory + 6 personal + 5 knowledge) |
+| Commits | 1 (`28ee1e7`) |
+| 类型检查 | 8/8 通过 |
+
+### 依赖拓扑
+
+```
+@synapse/shared (无依赖)
+  ├── @synapse/agent-core (shared, openai)
+  ├── @synapse/personas (shared, yaml)
+  ├── @synapse/compliance (shared, yaml)
+  ├── @synapse/memory (shared)                     ← 新建
+  ├── @synapse/mcp-hub (shared, @modelcontextprotocol/sdk, zod)
+  │     └── @synapse/server (shared, agent-core, mcp-hub, personas, compliance, memory, hono)
+  └── @synapse/mcp-servers (@modelcontextprotocol/sdk, zod)  ← 独立进程
+```
