@@ -17,40 +17,55 @@ chatRoutes.post('/chat', async (c) => {
 
   const strategy = routingStrategy ?? 'default';
 
-  if (!stream) {
-    const result = await router.complete({ messages }, strategy, model);
-    return c.json({
-      message: {
-        role: 'assistant' as const,
-        content: result.content,
-        thinking: result.thinking,
-      },
-      model: result.model,
-      usage: result.usage,
-    });
-  }
-
-  return streamSSE(c, async (sseStream) => {
-    for await (const chunk of router.completeStream({ messages }, strategy, model)) {
-      if (chunk.done) {
-        await sseStream.writeSSE({
-          data: JSON.stringify({ content: '', done: true, model: chunk.model, usage: chunk.usage }),
-          event: 'message',
-        });
-        break;
-      }
-
-      await sseStream.writeSSE({
-        data: JSON.stringify({
-          content: chunk.content ?? '',
-          thinking: chunk.thinking,
-          done: false,
-          model: chunk.model,
-        }),
-        event: 'message',
+  try {
+    if (!stream) {
+      const result = await router.complete({ messages }, strategy, model);
+      return c.json({
+        message: {
+          role: 'assistant' as const,
+          content: result.content,
+          thinking: result.thinking,
+        },
+        model: result.model,
+        usage: result.usage,
       });
     }
 
-    await sseStream.writeSSE({ data: '[DONE]', event: 'message' });
-  });
+    return streamSSE(c, async (sseStream) => {
+      try {
+        for await (const chunk of router.completeStream({ messages }, strategy, model)) {
+          if (chunk.done) {
+            await sseStream.writeSSE({
+              data: JSON.stringify({ content: '', done: true, model: chunk.model, usage: chunk.usage }),
+              event: 'message',
+            });
+            break;
+          }
+
+          await sseStream.writeSSE({
+            data: JSON.stringify({
+              content: chunk.content ?? '',
+              thinking: chunk.thinking,
+              done: false,
+              model: chunk.model,
+            }),
+            event: 'message',
+          });
+        }
+
+        await sseStream.writeSSE({ data: '[DONE]', event: 'message' });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown streaming error';
+        console.error('Stream error:', err);
+        await sseStream.writeSSE({
+          data: JSON.stringify({ error: message, done: true }),
+          event: 'error',
+        });
+      }
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Chat error:', err);
+    return c.json({ error: message }, 500);
+  }
 });

@@ -8,7 +8,7 @@ export class MiniMaxProvider implements ModelProvider {
   constructor(apiKey: string) {
     this.client = new OpenAI({
       apiKey,
-      baseURL: 'https://api.minimax.io/v1',
+      baseURL: 'https://api.minimaxi.com/v1',
     });
   }
 
