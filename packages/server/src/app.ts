@@ -69,12 +69,17 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub }> {
     const mcpTools = await hub.getTools();
 
     // Create a tool registry for persona tool listing
-    const { ToolRegistry, registerBuiltInTools } = await import('@synapse/agent-core');
+    const { ToolRegistry, registerBuiltInTools, registerMemoryTools } = await import('@synapse/agent-core');
     toolRegistry = new ToolRegistry();
     registerBuiltInTools(toolRegistry);
     for (const t of mcpTools) {
       toolRegistry.register(t as import('@synapse/agent-core').Tool);
     }
+    // Register memory tools for persona tool listing
+    registerMemoryTools(toolRegistry, {
+      orgMemory, personalMemory, knowledgeBase,
+      personaId: '_listing', orgMemoryAccess: [],
+    });
 
     app.route('/api', createPersonaRoutes(personaRegistry, toolRegistry));
     app.route('/api', createAgentRoutes({
@@ -91,9 +96,13 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub }> {
     console.warn('[server] MCP Hub init failed, using default agent:', err);
 
     // Still create tool registry with built-in tools for persona listing
-    const { ToolRegistry, registerBuiltInTools } = await import('@synapse/agent-core');
+    const { ToolRegistry, registerBuiltInTools, registerMemoryTools } = await import('@synapse/agent-core');
     toolRegistry = new ToolRegistry();
     registerBuiltInTools(toolRegistry);
+    registerMemoryTools(toolRegistry, {
+      orgMemory, personalMemory, knowledgeBase,
+      personaId: '_listing', orgMemoryAccess: [],
+    });
 
     app.route('/api', createPersonaRoutes(personaRegistry, toolRegistry));
     app.route('/api', createAgentRoutes({

@@ -24,6 +24,9 @@ allowed_tools:
   - "file_search"
   - "shell_exec"
   - "web_fetch"
+  - "memory_read"
+  - "memory_write"
+  - "knowledge_search"
 
 compliance_ruleset: general
 

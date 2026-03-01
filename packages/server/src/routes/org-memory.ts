@@ -49,9 +49,12 @@ export function createOrgMemoryRoutes(orgMemory: OrgMemoryStore): Hono {
   routes.put('/org-memory/:id', async (c) => {
     const id = c.req.param('id');
     const body = await c.req.json();
-    const { title, content, tags } = body;
+    const updates: Record<string, unknown> = {};
+    if (body.title !== undefined) updates.title = body.title;
+    if (body.content !== undefined) updates.content = body.content;
+    if (body.tags !== undefined) updates.tags = body.tags;
 
-    const updated = orgMemory.update(id, { title, content, tags });
+    const updated = orgMemory.update(id, updates as Partial<Pick<import('@synapse/shared').OrgMemoryEntry, 'title' | 'content' | 'tags'>>);
     if (!updated) {
       return c.json({ error: `Entry "${id}" not found` }, 404);
     }

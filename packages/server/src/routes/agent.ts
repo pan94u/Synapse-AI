@@ -43,9 +43,13 @@ export function createAgentRoutes(deps: AgentRouteDeps): Hono {
     // Build agent per request — supports persona and compliance
     let agent: Agent;
     if (personaId && deps.personaRegistry) {
-      const allToolNames = deps.mcpTools
-        ? deps.mcpTools.map((t) => t.definition.name)
-        : [];
+      const allToolNames = [
+        ...(deps.mcpTools ? deps.mcpTools.map((t) => t.definition.name) : []),
+        // Built-in tools
+        'file_read', 'file_write', 'file_search', 'shell_exec', 'web_fetch',
+        // Memory tools (always available when memory stores exist)
+        ...(deps.orgMemory ? ['memory_read', 'memory_write', 'knowledge_search'] : []),
+      ];
 
       const personaContext = deps.personaRegistry.buildContext(personaId, allToolNames);
       if (!personaContext) {

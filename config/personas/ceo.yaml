@@ -21,6 +21,9 @@ allowed_tools:
   - "database_db_list_tables"
   - "database_db_describe_table"
   - "http_request"
+  - "memory_read"
+  - "memory_write"
+  - "knowledge_search"
 
 compliance_ruleset: general
 
