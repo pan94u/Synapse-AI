@@ -1,0 +1,33 @@
+id: general
+rules:
+  - id: general-pii-mask
+    name: 通用PII脱敏
+    phase: post
+    when:
+      tool: "*"
+    actions:
+      - auto_mask: true
+    audit: always
+
+  - id: general-batch-write-audit
+    name: 批量写操作审计
+    phase: pre
+    when:
+      tool: "db_execute"
+      action_type: write
+    conditions:
+      - if: "true"
+        then: require_approval
+        approver: ceo
+        reason: 数据库写操作需要审批
+    audit: always
+
+  - id: general-sensitive-query-log
+    name: 敏感查询审计
+    phase: pre
+    when:
+      tool: "db_query"
+    conditions:
+      - if: "true"
+        then: allow
+    audit: always

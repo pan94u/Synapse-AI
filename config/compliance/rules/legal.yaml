@@ -1,0 +1,38 @@
+id: legal
+rules:
+  - id: legal-contract-sign-review
+    name: 合同签署前置审核
+    phase: pre
+    when:
+      tool: "legal_sign_contract|legal_approve_contract"
+    conditions:
+      - if: "true"
+        then: require_approval
+        approver: legal-counsel
+        reason: 合同签署需法务顾问审核
+    audit: always
+
+  - id: legal-contract-mask
+    name: 合同信息脱敏
+    phase: post
+    when:
+      tool: "legal_*|db_query"
+    actions:
+      - auto_mask: true
+      - mask_fields:
+          - field: contract_amount
+            method: full_mask
+          - field: party_id_number
+            method: middle_mask
+    audit: always
+
+  - id: legal-sensitive-access-log
+    name: 法务敏感信息访问审计
+    phase: pre
+    when:
+      tool: "legal_*"
+    conditions:
+      - if: "persona.id NOT IN ['legal-counsel', 'ceo']"
+        then: deny
+        reason: 仅法务和CEO可访问法务信息
+    audit: always

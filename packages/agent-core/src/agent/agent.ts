@@ -10,14 +10,25 @@ export class Agent {
     this.config = config;
   }
 
+  private injectPersonaPrompt(messages: ChatMessage[]): ChatMessage[] {
+    if (!this.config.personaContext) return messages;
+    const systemMsg: ChatMessage = {
+      role: 'system',
+      content: this.config.personaContext.systemPromptAddition,
+    };
+    return [systemMsg, ...messages];
+  }
+
   async run(
     messages: ChatMessage[],
     strategy?: RoutingStrategy,
     requestedModel?: string,
   ): Promise<AgentResult> {
     const maxIterations = this.config.maxIterations ?? DEFAULT_MAX_ITERATIONS;
-    const tools = this.config.registry.list();
-    const conversationMessages = [...messages];
+    const tools = this.config.personaContext
+      ? this.config.registry.listForPersona(this.config.personaContext.allowedTools)
+      : this.config.registry.list();
+    const conversationMessages = this.injectPersonaPrompt([...messages]);
     let totalToolCalls = 0;
     let lastModel = '';
 
@@ -81,8 +92,10 @@ export class Agent {
     requestedModel?: string,
   ): AsyncIterable<AgentStreamEvent> {
     const maxIterations = this.config.maxIterations ?? DEFAULT_MAX_ITERATIONS;
-    const tools = this.config.registry.list();
-    const conversationMessages = [...messages];
+    const tools = this.config.personaContext
+      ? this.config.registry.listForPersona(this.config.personaContext.allowedTools)
+      : this.config.registry.list();
+    const conversationMessages = this.injectPersonaPrompt([...messages]);
     let totalToolCalls = 0;
     let lastModel = '';
 

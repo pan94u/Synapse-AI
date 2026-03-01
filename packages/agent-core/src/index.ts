@@ -1,4 +1,4 @@
-import type { ModelConfig, ToolDefinition, ToolPermission } from '@synapse/shared';
+import type { ModelConfig, ToolDefinition, ToolPermission, PersonaContext } from '@synapse/shared';
 import { MiniMaxProvider } from './models/provider-minimax.js';
 import { ClaudeProvider } from './models/provider-claude.js';
 import { ModelRouter } from './models/router.js';
@@ -17,6 +17,7 @@ export type { ModelProvider, CompletionParams, CompletionResult, StreamChunk } f
 // Tools
 export { ToolRegistry } from './tools/registry.js';
 export { ToolExecutor } from './tools/executor.js';
+export type { ComplianceHooks } from './tools/executor.js';
 export { registerBuiltInTools } from './tools/built-in/index.js';
 export type { Tool } from './tools/types.js';
 
@@ -115,4 +116,42 @@ export function createAgentWithMCP(mcpTools: MCPToolAdapter[]): Agent {
   const executor = new ToolExecutor(registry);
 
   return new Agent({ router, registry, executor });
+}
+
+/**
+ * Options for creating an Agent with persona context and compliance hooks.
+ */
+export interface AgentWithComplianceOptions {
+  mcpTools?: MCPToolAdapter[];
+  personaContext?: PersonaContext;
+  complianceHooks?: import('./tools/executor.js').ComplianceHooks;
+}
+
+/**
+ * Create an Agent with default router, built-in tools, optional MCP tools,
+ * persona context, and compliance pre/post hooks.
+ */
+export function createAgentWithCompliance(options: AgentWithComplianceOptions): Agent {
+  const router = createDefaultRouter();
+  const registry = new ToolRegistry();
+  registerBuiltInTools(registry);
+
+  if (options.mcpTools) {
+    for (const mcpTool of options.mcpTools) {
+      registry.register(mcpTool as Tool);
+    }
+  }
+
+  const executor = new ToolExecutor(
+    registry,
+    options.complianceHooks,
+    options.personaContext?.personaId,
+  );
+
+  return new Agent({
+    router,
+    registry,
+    executor,
+    personaContext: options.personaContext,
+  });
 }

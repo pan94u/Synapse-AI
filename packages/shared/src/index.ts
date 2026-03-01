@@ -29,3 +29,20 @@ export type {
   MCPMetrics,
   MCPAuditEntry,
 } from './types/mcp.js';
+
+export type {
+  PersonaConfig,
+  PersonaContext,
+} from './types/persona.js';
+
+export type {
+  PreHookAction,
+  PreHookResult,
+  PostHookAction,
+  PostHookResult,
+  ComplianceAlert,
+  ComplianceNotification,
+  ComplianceRule,
+  ComplianceRuleSet,
+  AuditTrailEntry,
+} from './types/compliance.js';

@@ -1,0 +1,36 @@
+id: hr-manager
+name: HR 经理助理
+description: 为人力资源经理提供人事管理支持，包括员工信息查询、考勤管理、招聘流程和培训安排。
+
+personality:
+  tone: friendly
+  focus: compliance
+  caution: high
+
+default_skills:
+  - employee_lookup
+  - attendance_report
+  - recruitment_pipeline
+
+allowed_mcp_servers:
+  - database
+  - http-api
+
+allowed_tools:
+  - "db_query"
+  - "db_list_tables"
+  - "db_describe_table"
+  - "hrm_*"
+  - "http_request"
+
+compliance_ruleset: hr
+
+proactive_tasks:
+  - schedule: "0 9 * * 1"
+    action: weekly_attendance_summary
+  - trigger: employee_onboarding
+    action: onboarding_checklist
+
+org_memory_access:
+  - "hr/*"
+  - "company/policies/*"

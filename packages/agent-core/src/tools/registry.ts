@@ -19,4 +19,15 @@ export class ToolRegistry {
   getPermission(name: string): ToolPermission {
     return this.tools.get(name)?.permission ?? 'deny';
   }
+
+  listForPersona(allowedTools: string[]): ToolDefinition[] {
+    if (!allowedTools || allowedTools.length === 0) return this.list();
+    return this.list().filter((t) =>
+      allowedTools.some((pattern) => {
+        if (pattern === '*') return true;
+        if (pattern.endsWith('*')) return t.name.startsWith(pattern.slice(0, -1));
+        return pattern === t.name;
+      }),
+    );
+  }
 }

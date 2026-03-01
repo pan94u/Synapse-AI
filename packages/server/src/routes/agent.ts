@@ -1,20 +1,78 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import type { ChatRequest } from '@synapse/shared';
-import type { Agent } from '@synapse/agent-core';
+import {
+  Agent,
+  createAgentWithCompliance,
+  createDefaultAgent,
+  type MCPToolAdapter,
+  type ComplianceHooks,
+} from '@synapse/agent-core';
+import type { PersonaRegistry } from '@synapse/personas';
+import type { ComplianceEngine, ComplianceAuditTrail } from '@synapse/compliance';
 
-export function createAgentRoutes(agent: Agent): Hono {
+interface AgentRouteDeps {
+  mcpTools?: MCPToolAdapter[];
+  personaRegistry?: PersonaRegistry;
+  complianceEngine?: ComplianceEngine;
+  auditTrail?: ComplianceAuditTrail;
+}
+
+interface AgentRequest extends ChatRequest {
+  personaId?: string;
+}
+
+export function createAgentRoutes(deps: AgentRouteDeps): Hono {
   const routes = new Hono();
 
   routes.post('/agent', async (c) => {
-    const body = await c.req.json<ChatRequest>();
-    const { messages, model, routingStrategy, stream = true } = body;
+    const body = await c.req.json<AgentRequest>();
+    const { messages, model, routingStrategy, stream = true, personaId } = body;
 
     if (!messages || messages.length === 0) {
       return c.json({ error: 'messages is required and must not be empty' }, 400);
     }
 
     const strategy = routingStrategy ?? 'default';
+
+    // Build agent per request — supports persona and compliance
+    let agent: Agent;
+    if (personaId && deps.personaRegistry) {
+      const allToolNames = deps.mcpTools
+        ? deps.mcpTools.map((t) => t.definition.name)
+        : [];
+
+      const personaContext = deps.personaRegistry.buildContext(personaId, allToolNames);
+      if (!personaContext) {
+        return c.json({ error: `Persona "${personaId}" not found` }, 404);
+      }
+
+      let complianceHooks: ComplianceHooks | undefined;
+      if (deps.complianceEngine && deps.auditTrail) {
+        const engine = deps.complianceEngine;
+        const auditTrail = deps.auditTrail;
+        const rulesetId = personaContext.complianceRuleset;
+
+        complianceHooks = {
+          preCheck: (params) =>
+            engine.preCheck({ ...params, rulesetId }),
+          postCheck: (params) =>
+            engine.postCheck({ ...params, rulesetId }),
+          recordAudit: (entry) => auditTrail.record(entry),
+        };
+      }
+
+      agent = createAgentWithCompliance({
+        mcpTools: deps.mcpTools,
+        personaContext,
+        complianceHooks,
+      });
+    } else if (deps.mcpTools && deps.mcpTools.length > 0) {
+      const { createAgentWithMCP } = await import('@synapse/agent-core');
+      agent = createAgentWithMCP(deps.mcpTools);
+    } else {
+      agent = createDefaultAgent();
+    }
 
     try {
       if (!stream) {

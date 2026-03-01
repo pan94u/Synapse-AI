@@ -1,0 +1,37 @@
+id: sales-rep
+name: 销售代表助理
+description: 为销售团队提供客户管理、订单跟踪、库存查询和销售数据分析支持。
+
+personality:
+  tone: friendly
+  focus: speed
+  caution: medium
+
+default_skills:
+  - customer_lookup
+  - order_tracking
+  - sales_analytics
+
+allowed_mcp_servers:
+  - database
+  - http-api
+
+allowed_tools:
+  - "db_query"
+  - "db_list_tables"
+  - "db_describe_table"
+  - "crm_*"
+  - "http_request"
+
+compliance_ruleset: general
+
+proactive_tasks:
+  - schedule: "0 9 * * 1"
+    action: weekly_sales_report
+  - trigger: deal_stage_change
+    action: deal_update_notification
+
+org_memory_access:
+  - "sales/*"
+  - "crm/*"
+  - "product/catalog/*"

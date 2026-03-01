@@ -1,0 +1,74 @@
+id: finance
+rules:
+  - id: fin-expense-approval
+    name: 报销分级审批
+    phase: pre
+    when:
+      tool: "fin_submit_expense|db_execute"
+    conditions:
+      - if: "input.amount <= 5000"
+        then: allow
+        reason: 小额报销自动放行
+      - if: "input.amount > 5000 AND input.amount <= 50000"
+        then: require_approval
+        approver: finance-controller
+        reason: 中额报销需财务总监审批
+      - if: "input.amount > 50000"
+        then: require_approval
+        approver: ceo
+        reason: 大额报销需CEO审批
+    audit: always
+
+  - id: fin-settlement-freeze
+    name: 结算期冻结
+    phase: pre
+    when:
+      tool: "fin_*|db_execute"
+      condition: "system.is_settlement_period == true"
+    conditions:
+      - if: "true"
+        then: deny
+        reason: 结算期间禁止财务操作
+    audit: always
+
+  - id: fin-large-payment-notify
+    name: 大额付款通知
+    phase: post
+    when:
+      tool: "fin_*"
+    actions:
+      - flag_if:
+          condition: "input.amount > 100000"
+          severity: warning
+          message: 大额付款已执行，请关注
+      - notify:
+          targets:
+            - ceo
+            - finance-controller
+          message: 有大额付款操作已完成
+    audit: always
+
+  - id: fin-salary-access
+    name: 薪酬访问控制
+    phase: pre
+    when:
+      tool: "db_query"
+      condition: "persona.id NOT IN ['hr-manager', 'ceo', 'finance-controller']"
+    conditions:
+      - if: "true"
+        then: allow
+    audit: always
+
+  - id: fin-data-mask
+    name: 财务数据脱敏
+    phase: post
+    when:
+      tool: "db_query|fin_*"
+    actions:
+      - auto_mask: true
+      - mask_fields:
+          - field: salary
+            method: full_mask
+          - field: bank_account
+            method: tail_mask
+    audit: always

@@ -11,6 +11,8 @@
     "@synapse/shared": "workspace:*",
     "@synapse/agent-core": "workspace:*",
     "@synapse/mcp-hub": "workspace:*",
+    "@synapse/personas": "workspace:*",
+    "@synapse/compliance": "workspace:*",
     "hono": "^4.7.0"
   }
 }

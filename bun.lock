@@ -18,6 +18,14 @@
         "openai": "^4.80.0",
       },
     },
+    "packages/compliance": {
+      "name": "@synapse/compliance",
+      "version": "0.1.0",
+      "dependencies": {
+        "@synapse/shared": "workspace:*",
+        "yaml": "^2.7.0",
+      },
+    },
     "packages/mcp-hub": {
       "name": "@synapse/mcp-hub",
       "version": "0.1.0",
@@ -35,12 +43,22 @@
         "zod": "^3.24.0",
       },
     },
+    "packages/personas": {
+      "name": "@synapse/personas",
+      "version": "0.1.0",
+      "dependencies": {
+        "@synapse/shared": "workspace:*",
+        "yaml": "^2.7.0",
+      },
+    },
     "packages/server": {
       "name": "@synapse/server",
       "version": "0.1.0",
       "dependencies": {
         "@synapse/agent-core": "workspace:*",
+        "@synapse/compliance": "workspace:*",
         "@synapse/mcp-hub": "workspace:*",
+        "@synapse/personas": "workspace:*",
         "@synapse/shared": "workspace:*",
         "hono": "^4.7.0",
       },
@@ -57,9 +75,13 @@
 
     "@synapse/agent-core": ["@synapse/agent-core@workspace:packages/agent-core"],
 
+    "@synapse/compliance": ["@synapse/compliance@workspace:packages/compliance"],
+
     "@synapse/mcp-hub": ["@synapse/mcp-hub@workspace:packages/mcp-hub"],
 
     "@synapse/mcp-servers": ["@synapse/mcp-servers@workspace:packages/mcp-servers"],
+
+    "@synapse/personas": ["@synapse/personas@workspace:packages/personas"],
 
     "@synapse/server": ["@synapse/server@workspace:packages/server"],
 
@@ -302,6 +324,8 @@
     "which": ["which@2.0.2", "", { "dependencies": { "isexe": "^2.0.0" }, "bin": { "node-which": "./bin/node-which" } }, "sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA=="],
 
     "wrappy": ["wrappy@1.0.2", "", {}, "sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ=="],
+
+    "yaml": ["yaml@2.8.2", "", { "bin": { "yaml": "bin.mjs" } }, "sha512-mplynKqc1C2hTVYxd0PU2xQAc22TI1vShAYGksCCfxbn/dFwnHTNi1bvYsBTkhdUNtGIf5xNOg938rrSSYvS9A=="],
 
     "zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 

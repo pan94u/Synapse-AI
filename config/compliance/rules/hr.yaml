@@ -1,0 +1,47 @@
+id: hr
+rules:
+  - id: hr-salary-restrict
+    name: 薪酬信息访问限制
+    phase: pre
+    when:
+      tool: "hrm_*|db_query"
+      condition: "persona.id NOT IN ['hr-manager', 'ceo', 'finance-controller']"
+    conditions:
+      - if: "true"
+        then: deny
+        reason: 仅HR经理、CEO和财务总监可查看薪酬相关信息
+    audit: always
+
+  - id: hr-employee-mask
+    name: 员工信息脱敏
+    phase: post
+    when:
+      tool: "hrm_*|db_query"
+    actions:
+      - auto_mask: true
+      - mask_fields:
+          - field: id_card
+            method: middle_mask
+          - field: id_number
+            method: middle_mask
+          - field: phone
+            method: middle_mask
+          - field: mobile
+            method: middle_mask
+          - field: salary
+            method: full_mask
+          - field: bank_account
+            method: tail_mask
+    audit: always
+
+  - id: hr-batch-update-approval
+    name: 批量人事变更审批
+    phase: pre
+    when:
+      tool: "hrm_batch_*|db_execute"
+    conditions:
+      - if: "true"
+        then: require_approval
+        approver: hr-manager
+        reason: 批量人事变更需HR经理审批
+    audit: always

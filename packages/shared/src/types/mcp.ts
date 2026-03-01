@@ -72,4 +72,7 @@ export interface MCPAuditEntry {
   input?: Record<string, unknown>;
   output?: { success: boolean; summary: string };
   latencyMs: number;
+  userId?: string;
+  personaId?: string;
+  approved?: boolean;
 }
