@@ -20,3 +20,12 @@ export type {
   ToolPermission,
   ToolConfig,
 } from './types/tool.js';
+
+export type {
+  MCPServerCategory,
+  MCPServerConfig,
+  MCPServerStatus,
+  MCPToolInfo,
+  MCPMetrics,
+  MCPAuditEntry,
+} from './types/mcp.js';

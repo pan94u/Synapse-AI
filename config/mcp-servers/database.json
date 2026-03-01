@@ -1,0 +1,29 @@
+{
+  "id": "database",
+  "name": "Database Server",
+  "description": "SQLite database access",
+  "transport": "stdio",
+  "command": "bun",
+  "args": ["run", "packages/mcp-servers/src/database/index.ts"],
+  "env": {
+    "DATABASE_PATH": "${env:DATABASE_PATH}"
+  },
+  "enabled": true,
+  "autoStart": true,
+  "healthCheck": {
+    "interval": 30000,
+    "timeout": 5000,
+    "retries": 3
+  },
+  "rateLimit": {
+    "maxRequests": 100,
+    "windowMs": 60000
+  },
+  "permissions": {
+    "tools": ["db_*"],
+    "resources": ["*"],
+    "requireApproval": ["db_execute"]
+  },
+  "tags": ["database", "sqlite"],
+  "category": "infrastructure"
+}

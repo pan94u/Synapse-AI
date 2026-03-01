@@ -1,4 +1,4 @@
-import type { ModelConfig } from '@synapse/shared';
+import type { ModelConfig, ToolDefinition, ToolPermission } from '@synapse/shared';
 import { MiniMaxProvider } from './models/provider-minimax.js';
 import { ClaudeProvider } from './models/provider-claude.js';
 import { ModelRouter } from './models/router.js';
@@ -6,6 +6,7 @@ import { ToolRegistry } from './tools/registry.js';
 import { ToolExecutor } from './tools/executor.js';
 import { registerBuiltInTools } from './tools/built-in/index.js';
 import { Agent } from './agent/agent.js';
+import type { Tool } from './tools/types.js';
 
 // Models
 export { ModelRouter } from './models/router.js';
@@ -84,6 +85,33 @@ export function createDefaultAgent(): Agent {
   const router = createDefaultRouter();
   const registry = new ToolRegistry();
   registerBuiltInTools(registry);
+  const executor = new ToolExecutor(registry);
+
+  return new Agent({ router, registry, executor });
+}
+
+/**
+ * MCP tool adapter interface — matches Tool but avoids importing @synapse/mcp-hub.
+ */
+export interface MCPToolAdapter {
+  definition: ToolDefinition;
+  permission: ToolPermission;
+  execute(args: Record<string, unknown>): Promise<string>;
+}
+
+/**
+ * Create an Agent with default router, built-in tools, and additional MCP tools.
+ */
+export function createAgentWithMCP(mcpTools: MCPToolAdapter[]): Agent {
+  const router = createDefaultRouter();
+  const registry = new ToolRegistry();
+  registerBuiltInTools(registry);
+
+  // Register MCP tools as standard Tool adapters
+  for (const mcpTool of mcpTools) {
+    registry.register(mcpTool as Tool);
+  }
+
   const executor = new ToolExecutor(registry);
 
   return new Agent({ router, registry, executor });

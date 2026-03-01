@@ -223,18 +223,20 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 ```
 ~/super-agent/
 ├── packages/
-│   ├── shared/          # 共享类型和常量
-│   ├── agent-core/      # 核心 Agent 引擎 (Model Router, Agent, Tools, Skills, Memory)
-│   ├── skill-manager/   # 技能管理器 (CRUD, 校验, 打包)
-│   ├── skill-marketplace/ # 技能市场 (搜索, 安装, 评分)
-│   ├── server/          # Hono API 服务端 (REST + WebSocket)
-│   ├── web/             # Next.js 前端
-│   └── knowledge/       # 知识库引擎
-├── skills/              # 技能目录 (built-in / installed / custom)
-├── data/                # 运行时数据 (memory / knowledge / logs)
+│   ├── shared/          # ✅ 共享类型 (Chat, Tool, Model, MCP)
+│   ├── agent-core/      # ✅ Agent 引擎 (Model Router, Agent, Tools)
+│   ├── mcp-hub/         # ✅ MCP 中心 (Hub, Client, Registry, Health, Audit, RateLimit)
+│   ├── mcp-servers/     # ✅ MCP Server 适配器 (database, http-api)
+│   ├── server/          # ✅ Hono API 服务端 (chat, agent, mcp 路由)
+│   ├── web/             # 📋 Next.js 前端 (Phase 10)
+│   └── knowledge/       # 📋 知识库引擎 (Phase 5)
+├── config/
+│   └── mcp-servers/     # ✅ MCP Server 配置 (database.json, http-api.json)
 ├── PLAN.md              # 总体技术方案
 ├── STRATEGY-5Y.md       # 五年战略规划
 ├── DISCUSSION-LOG.md    # 讨论演化记录
+├── LOGBOOK.md           # 开发日志 (Session 级)
+├── DESIGN-BASELINE.md   # 设计基线 (Phase 级)
 └── CLAUDE.md            # 本文件 — 项目级开发规范
 ```
 
@@ -252,15 +254,22 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 
 ## 十、实施阶段（当前进度）
 
+> 以 PLAN.md 阶段定义为准。
+
 | Phase | 目标 | 状态 |
 |-------|------|------|
-| Phase 1 | 基础框架 (Monorepo + shared types + Model Router + 基础 Chat) | 📋 待开始 |
-| Phase 2 | 工具系统 (Tool Registry + 内置工具 + Agent tool loop) | 📋 |
-| Phase 3 | Skill 系统 + 管理器 | 📋 |
-| Phase 3.5 | Skill Marketplace | 📋 |
-| Phase 4 | 记忆 & 知识库 | 📋 |
-| Phase 5 | 浏览器自动化 | 📋 |
-| Phase 6 | Web UI | 📋 |
+| Phase 1 | 基础框架 (Monorepo + Model Router + 流式 Chat) | ✅ 完成 |
+| Phase 2 | 工具系统 (Tool Registry + 内置工具 + Agent tool loop) | ✅ 完成 |
+| Phase 3 | MCP Hub + 基础连接器 (database + http-api) | ✅ 完成 |
+| Phase 4 | 角色画像 + 合规引擎 (Pre-Hook + Post-Hook) | 📋 待开始 |
+| Phase 5 | 组织记忆 + 个人记忆 + 知识库 | 📋 |
+| Phase 6 | 主动智能 (定时/事件/阈值) | 📋 |
+| Phase 6.5 | 决策智能 (数据→洞察→决策→战略) | 📋 |
+| Phase 7 | Skill 系统 + 管理器 | 📋 |
+| Phase 7.5 | Skill Marketplace | 📋 |
+| Phase 8 | 企业业务系统 MCP Servers | 📋 |
+| Phase 9 | 浏览器自动化 | 📋 |
+| Phase 10 | Web UI | 📋 |
 
 ---
 
