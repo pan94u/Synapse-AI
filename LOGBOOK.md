@@ -219,14 +219,23 @@
 | 类型安全 | SQLite bindings 类型修复（`unknown[]` → 联合类型） |
 | 依赖拓扑 | shared → agent-core, mcp-hub → server; mcp-servers 独立 |
 
-**待运行时验证**（需 `DATABASE_PATH` 环境变量）：
+**运行时验证**（`DATABASE_PATH=/tmp/test-synapse.sqlite bun run packages/server/src/index.ts`）：
 
-| 测试项 | 命令 | 预期 |
+| 测试项 | 命令 | 结果 |
 |--------|------|------|
-| MCP Server 状态 | `GET /api/mcp/servers` | database server status: connected |
-| MCP 工具列表 | `GET /api/mcp/tools` | 含 database_db_query, database_db_execute, database_db_list_tables |
-| Agent 调用 db | `POST /api/agent {"messages":[...]}` | tool_call → db_list_tables → 返回表列表 |
-| 审计日志 | `GET /api/mcp/audit` | 含 tool_call 记录 |
+| 服务启动 | 启动日志 | ✅ Hub 加载 1 个 enabled server，database connected with 3 tools |
+| 健康检查 | `GET /health` | ✅ `{"status":"ok"}` |
+| MCP Server 列表 | `GET /api/mcp/servers` | ✅ database status: connected，3 tools，metrics 正常 |
+| 单个 Server 详情 | `GET /api/mcp/servers/database` | ✅ 完整状态含 connectedAt、lastHealthCheck、tools、metrics |
+| Server 不存在 | `GET /api/mcp/servers/nonexistent` | ✅ 404 `{"error":"Server \"nonexistent\" not found"}` |
+| MCP 工具列表 | `GET /api/mcp/tools` | ✅ 3 个工具: database_db_query(always), database_db_execute(ask), database_db_list_tables(always) |
+| 重启 Server | `POST /api/mcp/servers/database/restart` | ✅ `success: true`，重新连接，新 connectedAt |
+| 审计日志（空） | `GET /api/mcp/audit` | ✅ `{"entries":[]}` |
+| Agent 纯文本 | `POST /api/agent "Say hello"` | ✅ 纯文本回复，toolCallsExecuted: 0 |
+| Agent 查表 | `POST /api/agent "List all tables"` | ✅ tool_call → db_list_tables → "empty database"，toolCallsExecuted: 1 |
+| Agent 建表+插入+查询 | `POST /api/agent "Create employees table, insert 3 rows, query all"` | ✅ 3 次 tool_call (CREATE TABLE → INSERT 3 rows → SELECT *)，返回格式化表格 |
+| 审计日志（调用后） | `GET /api/mcp/audit` | ✅ 4 条记录，含 serverId、action、input SQL、output、latencyMs (3-13ms) |
+| 健康监控 | lastHealthCheck 时间戳 | ✅ 每 30s 自动更新，心跳正常 |
 
 ### Act（经验沉淀）
 
@@ -236,6 +245,8 @@
 - **降级策略**: MCP Hub 失败不应阻塞整个服务，fallback 到纯内置工具 Agent
 - **bun:sqlite 类型**: `stmt.all(...params)` 的 params 必须是 `SQLQueryBindings[]`，不能直接传 `unknown[]`，需要类型收窄
 - **工具名前缀**: `${serverId}_${toolName}` 格式防止多个 MCP Server 工具名冲突
+- **本地代理干扰**: `curl` 走 `http_proxy` 代理会导致 localhost 请求 502，需 `--noproxy localhost`
+- **MCP 工具延迟**: SQLite 工具调用延迟 3-13ms，完全满足实时对话需求
 
 ### 文件变更表
 
