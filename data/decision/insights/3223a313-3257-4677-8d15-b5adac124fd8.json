@@ -1,0 +1,41 @@
+{
+  "id": "3223a313-3257-4677-8d15-b5adac124fd8",
+  "type": "attribution",
+  "severity": "info",
+  "title": "收入构成分析：产品销售主导",
+  "summary": "从业务线构成来看，产品销售是主要收入来源，占总收入的64.8%（80万），服务收入占24.3%（30万），许可收入占10.9%（134,567.89元）。",
+  "evidence": {
+    "metrics": [
+      "revenue"
+    ],
+    "dataPoints": [
+      {
+        "metric": "product_sales",
+        "value": 800000,
+        "note": "占总收入64.8%"
+      },
+      {
+        "metric": "services",
+        "value": 300000,
+        "note": "占总收入24.3%"
+      },
+      {
+        "metric": "licensing",
+        "value": 134567.89,
+        "note": "占总收入10.9%"
+      }
+    ]
+  },
+  "suggestedActions": [
+    "关注产品销售增长以驱动整体收入",
+    "评估服务业务增长潜力",
+    "探索许可收入提升空间"
+  ],
+  "strategyImpact": {
+    "objectiveId": "obj-revenue",
+    "impact": "positive",
+    "description": "收入结构健康，三大业务线均有贡献"
+  },
+  "personaId": "ceo",
+  "createdAt": "2026-03-02T01:09:03.423Z"
+}

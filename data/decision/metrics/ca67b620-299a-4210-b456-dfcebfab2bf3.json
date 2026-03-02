@@ -1,0 +1,18 @@
+{
+  "id": "ca67b620-299a-4210-b456-dfcebfab2bf3",
+  "metricId": "revenue",
+  "value": 1234567.89,
+  "period": "2026-03-02",
+  "periodType": "daily",
+  "metadata": {
+    "date": "2025-01-17",
+    "business_lines": {
+      "product_sales": 800000,
+      "services": 300000,
+      "licensing": 134567.89
+    },
+    "yoy_change": "+12.5%",
+    "mom_change": "+3.2%"
+  },
+  "collectedAt": "2026-03-02T01:08:02.052Z"
+}

@@ -1,0 +1,97 @@
+{
+  "objectives": [
+    {
+      "id": "obj-revenue",
+      "name": "营收增长",
+      "target": "同比增长30%，全年营收突破1亿元",
+      "keyResults": [
+        {
+          "id": "kr-revenue-q1",
+          "name": "Q1完成年度目标的25%",
+          "metricId": "revenue",
+          "targetValue": 25000000,
+          "currentValue": 1234567.89,
+          "status": "off_track"
+        },
+        {
+          "id": "kr-margin-maintain",
+          "name": "毛利率维持在35%以上",
+          "metricId": "gross_margin",
+          "targetValue": 35,
+          "currentValue": 0,
+          "status": "off_track"
+        }
+      ]
+    },
+    {
+      "id": "obj-efficiency",
+      "name": "运营效率提升",
+      "target": "运营效率全面提升，费用率降低5个百分点",
+      "keyResults": [
+        {
+          "id": "kr-return-rate",
+          "name": "退货率控制在3%以内",
+          "metricId": "return_rate",
+          "targetValue": 3,
+          "currentValue": 0,
+          "status": "off_track"
+        },
+        {
+          "id": "kr-inventory",
+          "name": "库存周转天数缩短至30天",
+          "metricId": "inventory_turnover",
+          "targetValue": 30,
+          "currentValue": 0,
+          "status": "off_track"
+        },
+        {
+          "id": "kr-cost-ratio",
+          "name": "综合费用率降至30%以下",
+          "metricId": "cost_ratio",
+          "targetValue": 30,
+          "currentValue": 0,
+          "status": "off_track"
+        }
+      ]
+    },
+    {
+      "id": "obj-customer",
+      "name": "客户体验卓越",
+      "target": "NPS提升至60+，客户留存率95%+",
+      "keyResults": [
+        {
+          "id": "kr-nps",
+          "name": "NPS达到60分",
+          "metricId": "customer_nps",
+          "targetValue": 60,
+          "currentValue": 0,
+          "status": "off_track"
+        },
+        {
+          "id": "kr-new-customer",
+          "name": "季度新客获取5000+",
+          "metricId": "customer_acquisition",
+          "targetValue": 5000,
+          "currentValue": 0,
+          "status": "off_track"
+        }
+      ]
+    },
+    {
+      "id": "obj-talent",
+      "name": "人才发展",
+      "target": "打造高满意度团队，满意度评分85+",
+      "keyResults": [
+        {
+          "id": "kr-satisfaction",
+          "name": "员工满意度达到85分",
+          "metricId": "employee_satisfaction",
+          "targetValue": 85,
+          "currentValue": 0,
+          "status": "off_track"
+        }
+      ]
+    }
+  ],
+  "lastUpdated": "2026-03-02T01:08:29.643Z"
+}

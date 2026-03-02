@@ -1,0 +1,35 @@
+{
+  "id": "742c192d-46f7-4d65-a33b-a73b48872b2a",
+  "type": "trend",
+  "severity": "warning",
+  "title": "历史数据不足，趋势分析受限",
+  "summary": "当前仅提供2026-03-02的单日数据，历史数据点仅1个，无法进行有效的趋势分析和短期波动识别。建议补充更多历史周期数据以支持深入分析。",
+  "evidence": {
+    "metrics": [
+      "revenue"
+    ],
+    "dataPoints": [
+      {
+        "metric": "revenue.latest",
+        "value": 1234567.89,
+        "note": "数据日期2026-03-02"
+      },
+      {
+        "metric": "history.length",
+        "value": 1,
+        "note": "仅有1个历史数据点"
+      }
+    ]
+  },
+  "suggestedActions": [
+    "接入更多历史数据（建议至少30天）",
+    "建立日/周/月维度的数据追踪机制"
+  ],
+  "strategyImpact": {
+    "objectiveId": "obj-revenue",
+    "impact": "neutral",
+    "description": "数据不足影响洞察深度和预测准确性"
+  },
+  "personaId": "ceo",
+  "createdAt": "2026-03-02T01:09:03.424Z"
+}

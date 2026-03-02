@@ -1,0 +1,23 @@
+[
+  {
+    "id": "3223a313-3257-4677-8d15-b5adac124fd8",
+    "type": "attribution",
+    "severity": "info",
+    "personaId": "ceo",
+    "createdAt": "2026-03-02T01:09:03.423Z"
+  },
+  {
+    "id": "7dc8d6e7-4f4e-4f7d-afd6-38a9669b69e1",
+    "type": "benchmark",
+    "severity": "info",
+    "personaId": "ceo",
+    "createdAt": "2026-03-02T01:09:03.424Z"
+  },
+  {
+    "id": "742c192d-46f7-4d65-a33b-a73b48872b2a",
+    "type": "trend",
+    "severity": "warning",
+    "personaId": "ceo",
+    "createdAt": "2026-03-02T01:09:03.424Z"
+  }
+]

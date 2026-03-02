@@ -1,0 +1,54 @@
+{
+  "id": "2b8c5c15-b34e-4deb-9756-9c342f22360a",
+  "deciderId": "ceo",
+  "deciderRole": "CEO",
+  "context": {
+    "question": "东区退货率异常升高，是否需要暂停东区促销活动？",
+    "background": "过去两周东区退货率从3%升至8.5%，主要集中在新品类",
+    "insightIds": [],
+    "dataSnapshot": {
+      "return_rate_east": 8.5,
+      "return_rate_avg": 3.2
+    }
+  },
+  "options": [
+    {
+      "id": "opt-1",
+      "description": "暂停东区全部促销活动",
+      "pros": [
+        "立即止损",
+        "给供应链缓冲时间"
+      ],
+      "cons": [
+        "影响营收",
+        "渠道合作伙伴不满"
+      ],
+      "estimatedImpact": "短期营收下降15%，退货率回到3%",
+      "riskLevel": "medium"
+    },
+    {
+      "id": "opt-2",
+      "description": "仅暂停新品类促销，保留老品类",
+      "pros": [
+        "精准控制",
+        "维持基础营收"
+      ],
+      "cons": [
+        "新品类推广延迟"
+      ],
+      "estimatedImpact": "营收下降5%，退货率降至5%",
+      "riskLevel": "low"
+    }
+  ],
+  "decision": {
+    "selectedOptionId": "opt-2",
+    "rationale": "精准控制优于全面暂停，同时安排质量团队排查新品类问题",
+    "expectedOutcome": "2周内退货率回到4%以下",
+    "reviewDate": "2026-03-16"
+  },
+  "tracking": {
+    "status": "executing"
+  },
+  "createdAt": "2026-03-02T01:06:04.657Z",
+  "updatedAt": "2026-03-02T01:06:40.847Z"
+}
