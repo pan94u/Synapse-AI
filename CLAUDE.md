@@ -235,16 +235,22 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 │   ├── personas/        # ✅ 角色画像 (loader, registry, context builder)
 │   ├── compliance/      # ✅ 合规引擎 (pre-hook, post-hook, masker, evaluator)
 │   ├── memory/          # ✅ 记忆系统 (OrgMemory, PersonalMemory, KnowledgeBase)
-│   ├── server/          # ✅ Hono API 服务端 (chat, agent, mcp, personas, compliance, memory 路由)
+│   ├── proactive/       # ✅ 主动智能 (CronScheduler, EventBus, ThresholdMonitor, NotificationStore)
+│   ├── decision-engine/ # ✅ 决策智能 (MetricStore, InsightEngine, StrategyTracker, DecisionJournal)
+│   ├── server/          # ✅ Hono API 服务端 (chat, agent, mcp, personas, compliance, memory, proactive, decision 路由)
 │   └── web/             # 📋 Next.js 前端 (Phase 10)
 ├── data/
 │   ├── org-memory/      # ✅ 组织记忆数据 (policies, decisions, lessons, knowledge)
 │   ├── memory/          # ✅ 个人记忆数据 ({personaId}/facts.json, conversations.json)
-│   └── knowledge/       # ✅ 知识库文档数据 ({id}.json + _index.json)
+│   ├── knowledge/       # ✅ 知识库文档数据 ({id}.json + _index.json)
+│   ├── proactive/       # ✅ 主动智能数据 (history/, notifications/)
+│   └── decision/        # ✅ 决策智能数据 (metrics/, insights/, journal/, reports/, strategy/)
 ├── config/
 │   ├── mcp-servers/     # ✅ MCP Server 配置 (database.json, http-api.json)
 │   ├── personas/        # ✅ 7 个角色 YAML (ceo, hr, finance, legal, sales, ops, engineer)
-│   └── compliance/rules/# ✅ 4 套合规规则 YAML (general, finance, hr, legal)
+│   ├── compliance/rules/# ✅ 4 套合规规则 YAML (general, finance, hr, legal)
+│   ├── proactive/       # ✅ 主动智能配置 (actions/*.yaml, monitors/*.yaml)
+│   └── decision/        # ✅ 决策智能配置 (metrics.yaml, strategy.yaml)
 ├── PLAN.md              # 总体技术方案
 ├── STRATEGY-5Y.md       # 五年战略规划
 ├── DISCUSSION-LOG.md    # 讨论演化记录
@@ -276,8 +282,8 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 | Phase 3 | MCP Hub + 基础连接器 (database + http-api) | ✅ 完成 |
 | Phase 4 | 角色画像 + 合规引擎 (Pre-Hook + Post-Hook) | ✅ 完成 |
 | Phase 5 | 组织记忆 + 个人记忆 + 知识库 | ✅ 完成 |
-| Phase 6 | 主动智能 (定时/事件/阈值) | 📋 |
-| Phase 6.5 | 决策智能 (数据→洞察→决策→战略) | 📋 |
+| Phase 6 | 主动智能 (定时/事件/阈值) | ✅ 完成 |
+| Phase 6.5 | 决策智能 (数据→洞察→决策→战略) | ✅ 完成 |
 | Phase 7 | Skill 系统 + 管理器 | 📋 |
 | Phase 7.5 | Skill Marketplace | 📋 |
 | Phase 8 | 企业业务系统 MCP Servers | 📋 |

@@ -936,3 +936,228 @@ packages/server/src/index.ts                        # +9 行: graceful shutdown 
   │     └── @synapse/server (shared, agent-core, mcp-hub, personas, compliance, memory, proactive, hono)
   └── @synapse/mcp-servers (@modelcontextprotocol/sdk, zod)  ← 独立进程
 ```
+
+---
+
+## Session 7 — Phase 6.5: 决策智能引擎 (Decision Intelligence)
+
+**日期**: 2026-03-02
+**Commit**: `fe208ed` feat: Phase 6.5 — Decision Intelligence Engine (决策智能引擎)
+**Data Commit**: `8b677df` test: add Phase 6.5 runtime verification data
+
+### Plan（目标）
+
+从"查→展示"升级到"查→分析→洞察→决策→追踪"——构建决策智能引擎：定期采集业务数据 → 自动计算 KPI → LLM 驱动洞察发现 → 结构化决策记录 → OKR/KPI 战略透视 → 自动报告生成。验证场景："定期采集数据自动计算 KPI；LLM 分析指标生成洞察；CEO 录入决策并追踪执行结果；自动生成经营日报"。
+
+### Do（实施）
+
+1. **共享类型扩展（@synapse/shared）**
+   - `MetricSnapshot`: 指标快照（metricId, value, period, periodType, metadata）
+   - `MetricDefinition`: YAML 指标定义（query, frequency, alertRules）
+   - `Insight`: 洞察（6 种 type: trend/anomaly/attribution/prediction/correlation/benchmark, severity, evidence, suggestedActions, strategyImpact）
+   - `DecisionRecord`: 决策记录（context, options with pros/cons/risk, decision with rationale, tracking lifecycle）
+   - `StrategyObjective`: 战略目标（OKR: keyResults linked to metricId, targetValue, currentValue, status）
+   - `DecisionReport`: 报告（type, content markdown, linked metricIds + insightIds）
+
+2. **@synapse/decision-engine 包（8 个源文件）**
+   - `metric-store.ts`: `MetricStore` — 指标快照文件存储
+     - `data/decision/metrics/{id}.json` + `_index.json`
+     - record / getLatest / getHistory / query（支持 metricId, periodType, from/to, limit）
+     - getMetricIds / getCount
+   - `collector.ts`: `DataCollector` — Cron 驱动数据采集器
+     - 从 `metrics.yaml` 加载指标定义，按 frequency 映射 cron（daily 6:00, weekly 周一 7:00, monthly 1号 8:00）
+     - 60s interval tick + lastRun 分钟级防重（复用 proactive CronScheduler 模式）
+     - `collectMetric()`: 构建 prompt → AgentExecutor 调用 LLM → 解析 JSON `{value, metadata}` → MetricStore.record()
+     - 内置 JSON 提取器（支持 markdown code block 和裸 JSON）
+     - 自带轻量 cron 匹配（matchesCron + matchField），不依赖 proactive 包
+   - `insight-engine.ts`: `InsightEngine` — LLM 驱动洞察生成
+     - `data/decision/insights/{id}.json` + `_index.json`
+     - `analyze()`: 收集最近指标快照 → 构建 6 维分析 prompt → Agent 生成 JSON 洞察数组 → 存储
+     - query（支持 type, severity, personaId, limit）/ getRecent / getCount
+   - `strategy-tracker.ts`: `StrategyTracker` — OKR/KPI 战略追踪
+     - 从 `strategy.yaml` 加载目标定义，保留已有 currentValue/status 状态
+     - `updateProgress()`: 从 MetricStore 读最新值 → 按 progress 比例计算 status（≥80% on_track, ≥50% at_risk, <50% off_track）
+     - `data/decision/strategy/state.json` 持久化
+   - `decision-journal.ts`: `DecisionJournal` — 决策记录 CRUD
+     - `data/decision/journal/{id}.json` + `_index.json`
+     - create / get / update（支持更新 decision + tracking 字段）/ query / getRecent
+     - tracking lifecycle: pending → executing → reviewing → closed
+   - `report-generator.ts`: `ReportGenerator` — LLM 驱动报告生成
+     - `data/decision/reports/{id}.json` + `_index.json`
+     - `generate()`: 收集指标 + 洞察 → 构建报告 prompt → Agent 生成 Markdown → 存储
+     - 支持 daily/weekly/monthly/thematic 4 种报告类型
+   - `engine.ts`: `DecisionEngine` — 主编排器
+     - 组合 6 个子组件（MetricStore, DataCollector, InsightEngine, StrategyTracker, DecisionJournal, ReportGenerator）
+     - initialize() → 加载 YAML 配置 + 更新策略进度
+     - start() / stop() → 控制 DataCollector cron 调度
+     - getStatus() → 综合状态快照
+     - 可选 `notifyCallback` 关联 proactive NotificationStore
+   - `index.ts`: 导出所有公开 API
+
+3. **YAML 配置文件**
+   - `config/decision/metrics.yaml`: 10 个核心指标
+     - 日频: revenue, gross_margin, order_count, return_rate（含 alertRules）
+     - 周频: customer_acquisition, inventory_turnover, cash_flow
+     - 月频: employee_satisfaction, customer_nps, cost_ratio
+   - `config/decision/strategy.yaml`: 4 个战略目标 + 8 个 KR
+     - obj-revenue: 营收增长（Q1 目标 2500 万, 毛利率 ≥35%）
+     - obj-efficiency: 运营效率（退货率 ≤3%, 库存周转 ≤30 天, 费用率 ≤30%）
+     - obj-customer: 客户体验（NPS ≥60, 季度新客 ≥5000）
+     - obj-talent: 人才发展（满意度 ≥85）
+
+4. **Server 集成**
+   - `routes/decision.ts`: 16 个 REST API 端点
+     - 指标: status / metrics / metrics/:id/snapshots / metrics/:id/collect
+     - 洞察: insights / insights/analyze
+     - 战略: strategy / strategy/:id / strategy/refresh
+     - 决策: journal(list) / journal(create) / journal/:id(get) / journal/:id(update)
+     - 报告: reports(list) / reports/generate / reports/:id(get)
+   - `app.ts`: 初始化 DecisionEngine + notifyCallback 关联 proactive NotificationStore + 路由注册
+   - `index.ts`: 添加 `decisionEngine.stop()` 到 graceful shutdown
+   - `package.json`: 添加 `@synapse/decision-engine` 依赖
+
+### Check（验证）
+
+**编译验证**:
+
+| 测试项 | 结果 |
+|--------|------|
+| `bun run typecheck` (10 packages) | 10/10 通过，零错误 |
+| bun install 依赖安装 | 成功，140 packages |
+| shared 类型导出 | 6 个新 Decision 类型正确导出 |
+| decision-engine 包编译 | 全部 8 个源文件零错误 |
+| server 路由集成 | 16 个新端点 + DecisionEngine 生命周期管理 |
+
+**运行时验证**（`bun run packages/server/src/index.ts`，从 monorepo 根目录启动）：
+
+*启动确认*:
+- 7 personas, 4 compliance rulesets, 11 proactive actions, 2 threshold monitors
+- `[DataCollector] Loaded 10 metric definitions`
+- `[StrategyTracker] Loaded 4 objectives`
+- `[DecisionEngine] Initialized` → `Started`
+
+*基础 API (9 tests)*:
+
+| 测试项 | 命令 | 结果 |
+|--------|------|------|
+| 引擎状态 | `GET /api/decision/status` | `running=true, metricDefinitions=10, strategyObjectives=4, offTrack=8` |
+| 列出指标 | `GET /api/decision/metrics` | 10 个指标定义（含 alertRules） |
+| 战略概览 | `GET /api/decision/strategy` | 4 个目标 + 8 个 KR（初始全部 off_track） |
+| 单个目标 | `GET /api/decision/strategy/obj-revenue` | 2 个 KR 含 targetValue |
+| 目标 404 | `GET /api/decision/strategy/nonexistent` | 404 正确响应 |
+| 空快照 | `GET /api/decision/metrics/revenue/snapshots` | 空数组 |
+| 空洞察 | `GET /api/decision/insights` | 空数组 |
+| 空日志 | `GET /api/decision/journal` | 空数组 |
+| 空报告 | `GET /api/decision/reports` | 空数组 |
+
+*决策 CRUD (4 tests)*:
+
+| 测试项 | 命令 | 结果 |
+|--------|------|------|
+| 创建决策 | `POST /api/decision/journal {deciderId:"ceo",...}` | 201，完整 DecisionRecord（UUID, 2 个选项, pros/cons/risk） |
+| 更新状态 | `PUT /api/decision/journal/:id {tracking:{status:"executing"}}` | status 从 pending → executing，updatedAt 更新 |
+| 获取详情 | `GET /api/decision/journal/:id` | 完整记录含上下文 + 选项 + 决策 + 追踪 |
+| 列表查询 | `GET /api/decision/journal` | 1 条记录 |
+
+*LLM 驱动端点 (3 tests)*:
+
+| 测试项 | 命令 | 结果 |
+|--------|------|------|
+| **手动采集** | `POST /api/decision/metrics/revenue/collect` | LLM 返回 `value: 1234567.89`，含 metadata（3 个业务线明细 + YoY/MoM） |
+| **洞察分析** | `POST /api/decision/insights/analyze {personaId:"ceo"}` | 3 个洞察: attribution（收入构成 64.8%/24.3%/10.9%）、benchmark（YoY +12.5%）、trend（数据不足预警） |
+| **生成日报** | `POST /api/decision/reports/generate {type:"daily",personaId:"ceo"}` | 完整 Markdown 报告含摘要、指标表格、洞察分析、风险预警、建议和展望 |
+
+*数据联动验证 (3 tests)*:
+
+| 测试项 | 命令 | 结果 |
+|--------|------|------|
+| 采集后快照 | `GET /api/decision/metrics/revenue/snapshots` | 1 条快照，value=1234567.89 + 完整 metadata |
+| 战略刷新 | `POST /api/decision/strategy/refresh` | kr-revenue-q1 的 currentValue 从 0 更新为 1234567.89 |
+| 最终状态 | `GET /api/decision/status` | `metricsCount=1, insightsCount=3, decisionsCount=1, reportsCount=1` |
+
+**总计: 19/19 测试通过（含 3 个 LLM 端到端验证）**
+
+### Act（经验沉淀）
+
+- **monorepo 根目录启动**: `bun run --filter` 运行时 `process.cwd()` 为包目录（`packages/server/`），导致 `config/` 和 `data/` 找不到。应直接 `bun run packages/server/src/index.ts` 从 monorepo 根启动
+- **Bun.serve idleTimeout**: 默认 10s，LLM 调用可能超时。数据虽成功写入但 HTTP 连接已被服务器关闭。curl 需 `--max-time 120`，生产环境需配置更长的 idleTimeout
+- **JSON 提取器健壮性**: LLM 返回可能是 markdown code block 或裸 JSON。两阶段提取器先尝试 code block 再 fallback 到正则匹配裸 JSON
+- **复用 vs 自包含 cron**: DataCollector 自带轻量 cron 匹配，不依赖 proactive 的 CronScheduler。两者模式一致但代码独立，避免了 decision-engine → proactive 的包间依赖
+- **洞察质量与数据量正相关**: 仅 1 个指标 1 个快照时，LLM 仍生成了 3 条有价值洞察，但明确指出"数据不足"。更多数据积累后洞察质量会显著提升
+- **KR status 计算简单有效**: progress = currentValue / targetValue，≥80% on_track, ≥50% at_risk, <50% off_track。足够 MVP，Phase 8+ 可引入加权和趋势预测
+
+### 文件变更表
+
+**新建 14 个文件**:
+```
+# Shared types
+packages/shared/src/types/decision.ts              # Decision 共享类型 (6 interfaces)
+
+# Decision Engine package
+packages/decision-engine/package.json               # 包配置 (依赖: shared, yaml)
+packages/decision-engine/tsconfig.json               # TS 配置
+packages/decision-engine/src/index.ts                # 公开 API 导出
+packages/decision-engine/src/metric-store.ts         # 指标快照存储 (file + _index.json)
+packages/decision-engine/src/collector.ts            # Cron 数据采集器 + JSON 提取器
+packages/decision-engine/src/insight-engine.ts       # LLM 洞察引擎 (6 维分析)
+packages/decision-engine/src/strategy-tracker.ts     # OKR/KPI 战略追踪
+packages/decision-engine/src/decision-journal.ts     # 决策记录 CRUD
+packages/decision-engine/src/report-generator.ts     # LLM 报告生成器
+packages/decision-engine/src/engine.ts               # DecisionEngine 主编排器
+
+# YAML configs
+config/decision/metrics.yaml                         # 10 个业务指标定义
+config/decision/strategy.yaml                        # 4 个战略目标 + 8 个 KR
+
+# Server route
+packages/server/src/routes/decision.ts               # Decision API (16 endpoints)
+```
+
+**修改 4 个文件 + bun.lock**:
+```
+packages/shared/src/index.ts                         # +9 行: 导出 Decision 类型
+packages/server/package.json                         # +1 行: @synapse/decision-engine 依赖
+packages/server/src/app.ts                           # +86 行: DecisionEngine 初始化 + notifyCallback + 路由
+packages/server/src/index.ts                         # +2 行: decisionEngine graceful shutdown
+bun.lock                                             # 自动更新
+```
+
+**运行时验证数据 (11 files)**:
+```
+data/decision/metrics/{uuid}.json + _index.json      # 1 条 revenue 快照
+data/decision/insights/{3 uuids}.json + _index.json  # 3 条洞察
+data/decision/journal/{uuid}.json + _index.json      # 1 条决策记录
+data/decision/reports/{uuid}.json + _index.json      # 1 份日报
+data/decision/strategy/state.json                    # 策略状态
+```
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 新建文件 | 14 (+11 运行时数据) |
+| 修改文件 | 4 (+bun.lock) |
+| 代码行数 (净增) | +1,854 |
+| 新增 Package | 1 (`decision-engine`) |
+| 总 Packages | 10 (`shared`, `agent-core`, `mcp-hub`, `mcp-servers`, `personas`, `compliance`, `memory`, `proactive`, `decision-engine`, `server`) |
+| 新增 API 端点 | 16 |
+| YAML 指标定义 | 10 个 |
+| 战略目标 | 4 个（8 个 KR） |
+| 运行时测试 | 19/19 通过（含 3 个 LLM E2E） |
+| Commits | 2 (`fe208ed`, `8b677df`) |
+| 类型检查 | 10/10 通过 |
+
+### 依赖拓扑
+
+```
+@synapse/shared (无依赖)
+  ├── @synapse/agent-core (shared, openai)
+  ├── @synapse/personas (shared, yaml)
+  ├── @synapse/compliance (shared, yaml)
+  ├── @synapse/memory (shared)
+  ├── @synapse/proactive (shared, yaml)
+  ├── @synapse/decision-engine (shared, yaml)        ← 新建
+  ├── @synapse/mcp-hub (shared, @modelcontextprotocol/sdk, zod)
+  │     └── @synapse/server (shared, agent-core, mcp-hub, personas, compliance, memory, proactive, decision-engine, hono)
+  └── @synapse/mcp-servers (@modelcontextprotocol/sdk, zod)  ← 独立进程
+```
