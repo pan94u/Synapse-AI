@@ -72,3 +72,21 @@ export type {
   StrategyObjective,
   DecisionReport,
 } from './types/decision.js';
+
+export type {
+  SkillCategory,
+  SkillStatus,
+  SkillSource,
+  SkillParameter,
+  SkillDefinition,
+  SkillExecution,
+} from './types/skill.js';
+
+export type {
+  MarketplaceSkill,
+  MarketplaceReview,
+  InstallRecord,
+  MarketplaceStats,
+  QualityCheckResult,
+  PublishInput,
+} from './types/marketplace.js';

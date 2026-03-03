@@ -86,12 +86,29 @@
         "@synapse/personas": "workspace:*",
         "@synapse/proactive": "workspace:*",
         "@synapse/shared": "workspace:*",
+        "@synapse/skill-manager": "workspace:*",
+        "@synapse/skill-marketplace": "workspace:*",
         "hono": "^4.7.0",
       },
     },
     "packages/shared": {
       "name": "@synapse/shared",
       "version": "0.1.0",
+    },
+    "packages/skill-manager": {
+      "name": "@synapse/skill-manager",
+      "version": "0.1.0",
+      "dependencies": {
+        "@synapse/shared": "workspace:*",
+        "yaml": "^2.7.0",
+      },
+    },
+    "packages/skill-marketplace": {
+      "name": "@synapse/skill-marketplace",
+      "version": "0.1.0",
+      "dependencies": {
+        "@synapse/shared": "workspace:*",
+      },
     },
   },
   "packages": {
@@ -118,6 +135,10 @@
     "@synapse/server": ["@synapse/server@workspace:packages/server"],
 
     "@synapse/shared": ["@synapse/shared@workspace:packages/shared"],
+
+    "@synapse/skill-manager": ["@synapse/skill-manager@workspace:packages/skill-manager"],
+
+    "@synapse/skill-marketplace": ["@synapse/skill-marketplace@workspace:packages/skill-marketplace"],
 
     "@types/bun": ["@types/bun@1.3.9", "", { "dependencies": { "bun-types": "1.3.9" } }, "sha512-KQ571yULOdWJiMH+RIWIOZ7B2RXQGpL1YQrBtLIV3FqDcCu6FsbFUBwhdKUlCKUpS3PJDsHlJ1QKlpxoVR+xtw=="],
 

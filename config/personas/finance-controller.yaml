@@ -8,9 +8,9 @@ personality:
   caution: high
 
 default_skills:
-  - financial_report
-  - expense_review
-  - budget_analysis
+  - monthly-report
+  - data-analysis
+  - sales-summary
 
 allowed_mcp_servers:
   - database
@@ -26,6 +26,7 @@ allowed_tools:
   - "memory_read"
   - "memory_write"
   - "knowledge_search"
+  - "skill_execute"
 
 compliance_ruleset: finance
 

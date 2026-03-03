@@ -8,9 +8,9 @@ personality:
   caution: low
 
 default_skills:
-  - db_operations
-  - api_debugging
-  - system_diagnostics
+  - system-diagnostics
+  - code-review
+  - data-analysis
 
 allowed_mcp_servers:
   - database
@@ -27,6 +27,7 @@ allowed_tools:
   - "memory_read"
   - "memory_write"
   - "knowledge_search"
+  - "skill_execute"
 
 compliance_ruleset: general
 

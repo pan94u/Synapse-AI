@@ -8,9 +8,7 @@ personality:
   caution: high
 
 default_skills:
-  - contract_review
-  - regulation_lookup
-  - risk_assessment
+  - contract-review
 
 allowed_mcp_servers:
   - database
@@ -25,6 +23,7 @@ allowed_tools:
   - "memory_read"
   - "memory_write"
   - "knowledge_search"
+  - "skill_execute"
 
 compliance_ruleset: legal
 

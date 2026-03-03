@@ -8,6 +8,7 @@ import { ComplianceEngine, ComplianceAuditTrail, ApprovalManager } from '@synaps
 import { OrgMemoryStore, PersonalMemoryStore, KnowledgeBase } from '@synapse/memory';
 import { ProactiveTaskManager } from '@synapse/proactive';
 import { DecisionEngine } from '@synapse/decision-engine';
+import { SkillManager } from '@synapse/skill-manager';
 import type { ProactiveTaskConfig } from '@synapse/shared';
 import { chatRoutes } from './routes/chat.js';
 import { createAgentRoutes } from './routes/agent.js';
@@ -19,8 +20,10 @@ import { createMemoryRoutes } from './routes/memory.js';
 import { createKnowledgeRoutes } from './routes/knowledge.js';
 import { createProactiveRoutes } from './routes/proactive.js';
 import { createDecisionRoutes } from './routes/decision.js';
+import { createSkillRoutes } from './routes/skills.js';
+import { createMarketplaceRoutes } from './routes/marketplace.js';
 
-export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveManager?: ProactiveTaskManager; decisionEngine?: DecisionEngine }> {
+export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveManager?: ProactiveTaskManager; decisionEngine?: DecisionEngine; skillManager?: SkillManager }> {
   const app = new Hono();
   const hub = new MCPHub();
 
@@ -68,6 +71,28 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
   app.route('/api', createMemoryRoutes(personalMemory));
   app.route('/api', createKnowledgeRoutes(knowledgeBase));
 
+  // Pre-declare SkillManager (initialized later, used by agent routes via late binding)
+  let skillManager: SkillManager | undefined;
+
+  // Build skillToolDeps with late-binding closures (safe: only invoked at request time)
+  const skillToolDeps: import('@synapse/agent-core').SkillToolDeps = {
+    executeSkill: async (skillId, personaId, parameters) => {
+      if (!skillManager) return { status: 'error', error: 'Skill Manager not initialized' };
+      const exec = await skillManager.executeSkill(skillId, personaId, parameters, 'agent_tool');
+      return { status: exec.status, result: exec.result, error: exec.error };
+    },
+    listSkills: (personaId) => {
+      if (!skillManager) return [];
+      const persona = personaRegistry.get(personaId);
+      const patterns = persona?.defaultSkills ?? [];
+      const skills = skillManager.listSkills({ defaultSkillPatterns: patterns.length > 0 ? patterns : undefined });
+      return skills
+        .filter((s) => s.status === 'active')
+        .map((s) => ({ id: s.id, name: s.name, description: s.description, category: s.category }));
+    },
+    currentPersonaId: '', // overridden per-request in agent.ts
+  };
+
   // Initialize MCP Hub and create agent
   let agentRouteDeps: {
     mcpTools?: import('@synapse/agent-core').MCPToolAdapter[];
@@ -77,7 +102,8 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
     orgMemory: OrgMemoryStore;
     personalMemory: PersonalMemoryStore;
     knowledgeBase: KnowledgeBase;
-  } = { personaRegistry, complianceEngine, auditTrail, orgMemory, personalMemory, knowledgeBase };
+    skillToolDeps?: import('@synapse/agent-core').SkillToolDeps;
+  } = { personaRegistry, complianceEngine, auditTrail, orgMemory, personalMemory, knowledgeBase, skillToolDeps };
 
   try {
     await hub.start();
@@ -85,7 +111,7 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
     agentRouteDeps = { ...agentRouteDeps, mcpTools };
 
     // Create a tool registry for persona tool listing
-    const { ToolRegistry, registerBuiltInTools, registerMemoryTools } = await import('@synapse/agent-core');
+    const { ToolRegistry, registerBuiltInTools, registerMemoryTools, registerSkillTool } = await import('@synapse/agent-core');
     toolRegistry = new ToolRegistry();
     registerBuiltInTools(toolRegistry);
     for (const t of mcpTools) {
@@ -96,6 +122,8 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
       orgMemory, personalMemory, knowledgeBase,
       personaId: '_listing', orgMemoryAccess: [],
     });
+    // Register skill tool for persona tool listing
+    registerSkillTool(toolRegistry, skillToolDeps);
 
     app.route('/api', createPersonaRoutes(personaRegistry, toolRegistry));
     app.route('/api', createAgentRoutes(agentRouteDeps));
@@ -104,13 +132,15 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
     console.warn('[server] MCP Hub init failed, using default agent:', err);
 
     // Still create tool registry with built-in tools for persona listing
-    const { ToolRegistry, registerBuiltInTools, registerMemoryTools } = await import('@synapse/agent-core');
+    const { ToolRegistry, registerBuiltInTools, registerMemoryTools, registerSkillTool } = await import('@synapse/agent-core');
     toolRegistry = new ToolRegistry();
     registerBuiltInTools(toolRegistry);
     registerMemoryTools(toolRegistry, {
       orgMemory, personalMemory, knowledgeBase,
       personaId: '_listing', orgMemoryAccess: [],
     });
+    // Register skill tool for persona tool listing
+    registerSkillTool(toolRegistry, skillToolDeps);
 
     app.route('/api', createPersonaRoutes(personaRegistry, toolRegistry));
     app.route('/api', createAgentRoutes(agentRouteDeps));
@@ -287,5 +317,106 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
     console.warn('[server] Failed to initialize Decision Engine:', err);
   }
 
-  return { app, hub, proactiveManager, decisionEngine };
+  // Initialize Skill Manager
+  try {
+    const { createAgentWithCompliance } = await import('@synapse/agent-core');
+    const mcpTools = agentRouteDeps.mcpTools;
+
+    // ScopedAgentExecutor callback — supports tool domain restriction (persona ∩ skill allowedTools)
+    const skillAgentExecutor = async (personaId: string, userMessage: string, skillAllowedTools?: string[]) => {
+      const allToolNames = [
+        ...(mcpTools ? mcpTools.map((t) => t.definition.name) : []),
+        'file_read', 'file_write', 'file_search', 'shell_exec', 'web_fetch',
+        ...(orgMemory ? ['memory_read', 'memory_write', 'knowledge_search'] : []),
+      ];
+      const personaContext = personaRegistry.buildContext(personaId, allToolNames);
+      if (!personaContext) {
+        throw new Error(`Persona "${personaId}" not found`);
+      }
+
+      // If skill has tool restrictions, intersect with persona's allowed tools
+      if (skillAllowedTools && skillAllowedTools.length > 0) {
+        const skillToolSet = new Set(skillAllowedTools);
+        personaContext.allowedTools = personaContext.allowedTools.filter((t) => skillToolSet.has(t));
+      }
+
+      let complianceHooks: import('@synapse/agent-core').ComplianceHooks | undefined;
+      if (complianceEngine && auditTrail) {
+        const rulesetId = personaContext.complianceRuleset;
+        complianceHooks = {
+          preCheck: (params) => complianceEngine.preCheck({ ...params, rulesetId }),
+          postCheck: (params) => complianceEngine.postCheck({ ...params, rulesetId }),
+          recordAudit: (entry) => auditTrail.record(entry),
+        };
+      }
+
+      let memoryToolDeps: import('@synapse/agent-core').MemoryToolDeps | undefined;
+      if (orgMemory && personalMemory && knowledgeBase) {
+        const personaConfig = personaRegistry.get(personaId);
+        memoryToolDeps = {
+          orgMemory, personalMemory, knowledgeBase,
+          personaId,
+          orgMemoryAccess: personaConfig?.orgMemoryAccess ?? [],
+        };
+      }
+
+      const agent = createAgentWithCompliance({
+        mcpTools,
+        personaContext,
+        complianceHooks,
+        memoryToolDeps,
+      });
+
+      const result = await agent.run([{ role: 'user', content: userMessage }]);
+      return {
+        content: result.message.content,
+        model: result.model,
+        toolCallsExecuted: result.toolCallsExecuted,
+      };
+    };
+
+    skillManager = new SkillManager({
+      agentExecutor: skillAgentExecutor,
+      builtInSkillsDir: resolve(process.cwd(), 'config/skills'),
+      customSkillsDir: resolve(process.cwd(), 'data/skills'),
+      historyDataDir: resolve(process.cwd(), 'data/skill-history'),
+    });
+
+    skillManager.initialize();
+
+    app.route('/api', createSkillRoutes(skillManager, personaRegistry));
+    console.log('[server] Skill Manager initialized');
+
+    // Initialize Skill Marketplace
+    const { SkillMarketplace } = await import('@synapse/skill-marketplace');
+
+    const marketplaceAdapter = {
+      getSkill: (id: string) => skillManager!.getSkill(id),
+      getHistory: () => skillManager!.getHistory(),
+      reloadInstalledSkills: () => {
+        // Reload installed skills from data/skills/installed/ into registry
+        skillManager!.getRegistry().loadFromDir(
+          resolve(process.cwd(), 'data/skills/installed'),
+          'installed',
+        );
+      },
+    };
+
+    const marketplace = new SkillMarketplace(
+      {
+        registryDir: resolve(process.cwd(), 'data/marketplace/registry'),
+        reviewsDir: resolve(process.cwd(), 'data/marketplace/reviews'),
+        installedSkillsDir: resolve(process.cwd(), 'data/skills/installed'),
+        installedRecordPath: resolve(process.cwd(), 'data/marketplace/installed.json'),
+      },
+      marketplaceAdapter,
+    );
+
+    app.route('/api', createMarketplaceRoutes(marketplace));
+    console.log('[server] Skill Marketplace initialized');
+  } catch (err) {
+    console.warn('[server] Failed to initialize Skill Manager:', err);
+  }
+
+  return { app, hub, proactiveManager, decisionEngine, skillManager };
 }

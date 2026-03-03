@@ -5,9 +5,11 @@ import {
   Agent,
   createAgentWithCompliance,
   createDefaultAgent,
+  registerSkillTool,
   type MCPToolAdapter,
   type ComplianceHooks,
   type MemoryToolDeps,
+  type SkillToolDeps,
 } from '@synapse/agent-core';
 import type { PersonaRegistry } from '@synapse/personas';
 import type { ComplianceEngine, ComplianceAuditTrail } from '@synapse/compliance';
@@ -21,6 +23,7 @@ interface AgentRouteDeps {
   orgMemory?: OrgMemoryStore;
   personalMemory?: PersonalMemoryStore;
   knowledgeBase?: KnowledgeBase;
+  skillToolDeps?: SkillToolDeps;
 }
 
 interface AgentRequest extends ChatRequest {
@@ -49,6 +52,8 @@ export function createAgentRoutes(deps: AgentRouteDeps): Hono {
         'file_read', 'file_write', 'file_search', 'shell_exec', 'web_fetch',
         // Memory tools (always available when memory stores exist)
         ...(deps.orgMemory ? ['memory_read', 'memory_write', 'knowledge_search'] : []),
+        // Skill tool
+        ...(deps.skillToolDeps ? ['skill_execute'] : []),
       ];
 
       const personaContext = deps.personaRegistry.buildContext(personaId, allToolNames);
@@ -84,11 +89,18 @@ export function createAgentRoutes(deps: AgentRouteDeps): Hono {
         };
       }
 
+      // Build skill tool deps scoped to this persona
+      let skillToolDeps: SkillToolDeps | undefined;
+      if (deps.skillToolDeps) {
+        skillToolDeps = { ...deps.skillToolDeps, currentPersonaId: personaId };
+      }
+
       agent = createAgentWithCompliance({
         mcpTools: deps.mcpTools,
         personaContext,
         complianceHooks,
         memoryToolDeps,
+        skillToolDeps,
       });
     } else if (deps.mcpTools && deps.mcpTools.length > 0) {
       const { createAgentWithMCP } = await import('@synapse/agent-core');

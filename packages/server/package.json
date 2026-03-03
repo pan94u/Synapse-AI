@@ -16,6 +16,8 @@
     "@synapse/memory": "workspace:*",
     "@synapse/proactive": "workspace:*",
     "@synapse/decision-engine": "workspace:*",
+    "@synapse/skill-manager": "workspace:*",
+    "@synapse/skill-marketplace": "workspace:*",
     "hono": "^4.7.0"
   }
 }

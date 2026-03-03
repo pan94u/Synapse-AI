@@ -8,9 +8,8 @@ personality:
   caution: medium
 
 default_skills:
-  - customer_lookup
-  - order_tracking
-  - sales_analytics
+  - sales-summary
+  - customer-analysis
 
 allowed_mcp_servers:
   - database
@@ -25,6 +24,7 @@ allowed_tools:
   - "memory_read"
   - "memory_write"
   - "knowledge_search"
+  - "skill_execute"
 
 compliance_ruleset: general
 

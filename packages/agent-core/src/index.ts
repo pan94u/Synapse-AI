@@ -4,7 +4,7 @@ import { ClaudeProvider } from './models/provider-claude.js';
 import { ModelRouter } from './models/router.js';
 import { ToolRegistry } from './tools/registry.js';
 import { ToolExecutor } from './tools/executor.js';
-import { registerBuiltInTools, registerMemoryTools } from './tools/built-in/index.js';
+import { registerBuiltInTools, registerMemoryTools, registerSkillTool } from './tools/built-in/index.js';
 import { Agent } from './agent/agent.js';
 import type { Tool } from './tools/types.js';
 import type { MemoryToolDeps } from './tools/built-in/memory-types.js';
@@ -19,12 +19,13 @@ export type { ModelProvider, CompletionParams, CompletionResult, StreamChunk } f
 export { ToolRegistry } from './tools/registry.js';
 export { ToolExecutor } from './tools/executor.js';
 export type { ComplianceHooks } from './tools/executor.js';
-export { registerBuiltInTools, registerMemoryTools } from './tools/built-in/index.js';
-export type { MemoryToolDeps } from './tools/built-in/index.js';
+export { registerBuiltInTools, registerMemoryTools, registerSkillTool } from './tools/built-in/index.js';
+export type { MemoryToolDeps, SkillToolDeps } from './tools/built-in/index.js';
 export type { Tool } from './tools/types.js';
 export { createMemoryReadTool } from './tools/built-in/memory-read.js';
 export { createMemoryWriteTool } from './tools/built-in/memory-write.js';
 export { createKnowledgeSearchTool } from './tools/built-in/knowledge-search.js';
+export { createSkillExecuteTool } from './tools/built-in/skill-execute.js';
 
 // Agent
 export { Agent } from './agent/agent.js';
@@ -131,6 +132,7 @@ export interface AgentWithComplianceOptions {
   personaContext?: PersonaContext;
   complianceHooks?: import('./tools/executor.js').ComplianceHooks;
   memoryToolDeps?: MemoryToolDeps;
+  skillToolDeps?: import('./tools/built-in/skill-execute.js').SkillToolDeps;
 }
 
 /**
@@ -150,6 +152,10 @@ export function createAgentWithCompliance(options: AgentWithComplianceOptions): 
 
   if (options.memoryToolDeps) {
     registerMemoryTools(registry, options.memoryToolDeps);
+  }
+
+  if (options.skillToolDeps) {
+    registerSkillTool(registry, options.skillToolDeps);
   }
 
   const executor = new ToolExecutor(

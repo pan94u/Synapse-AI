@@ -1161,3 +1161,192 @@ data/decision/strategy/state.json                    # 策略状态
   │     └── @synapse/server (shared, agent-core, mcp-hub, personas, compliance, memory, proactive, decision-engine, hono)
   └── @synapse/mcp-servers (@modelcontextprotocol/sdk, zod)  ← 独立进程
 ```
+
+---
+
+## Session 8 — Phase 7: Skill 系统 + 管理器
+
+**日期**: 2026-03-02
+**Commit**: (已完成，补录 logbook)
+
+### Plan（目标）
+
+实现完整的 Skill 系统：SKILL.md 定义格式 → 解析/加载 → 注册表 → 执行引擎 → 历史追踪 → REST API → Agent 集成。
+
+### Do（实施）
+
+1. **@synapse/shared 类型扩展**
+   - `SkillDefinition`、`SkillExecution`、`SkillParameter`
+   - `SkillCategory` (8 种)、`SkillStatus`、`SkillSource`
+
+2. **@synapse/skill-manager（新包，~790 行）**
+   - `SkillParser`: SKILL.md 格式解析（YAML frontmatter + Markdown body）
+   - `SkillLoader`: 目录扫描 + 批量解析
+   - `SkillRegistry`: 内存目录，支持分类/来源/Persona glob 匹配（exact, prefix*, *）
+   - `SkillStore`: 自定义 Skill 文件持久化（CRUD + 状态管理）
+   - `SkillExecutor`: 执行引擎，作用域限定 Agent + 工具白名单交集
+   - `ExecutionHistory`: 执行追踪，_index.json 索引 + 单条记录文件
+   - `SkillManager`: 主编排器，整合以上所有组件
+
+3. **8 个内置 Skill**
+   - code-review, contract-review, customer-analysis, data-analysis
+   - employee-onboarding, monthly-report, sales-summary, system-diagnostics
+
+4. **REST API（10 个端点）**
+   - `GET /api/skills` 列表 + 过滤
+   - `GET /api/skills/status` 状态概览
+   - `GET /api/skills/categories` 分类统计
+   - `GET /api/skills/history` 执行历史
+   - `GET /api/skills/:skillId` 详情
+   - `POST /api/skills/:skillId/execute` 执行
+   - `POST /api/skills/:skillId/status` 状态切换
+   - `POST /api/skills/custom` 创建自定义 Skill
+   - `PUT /api/skills/custom/:skillId` 更新
+   - `DELETE /api/skills/custom/:skillId` 删除
+
+5. **Agent 集成**
+   - `skill-execute` 工具注册到 agent-core
+   - `SkillToolDeps` 接口 + 延迟绑定
+   - server/app.ts 中 ScopedAgentExecutor 实现工具域限制
+
+### Check（验证）
+
+| 测试项 | 结果 |
+|--------|------|
+| `bun run typecheck` (11 packages) | 11/11 通过 |
+| SKILL.md 解析 (8 个内置) | 全部加载 |
+| 自定义 Skill CRUD | 创建/更新/删除正常 |
+| Persona glob 匹配 | exact/prefix*/全通配 正常 |
+
+### Act（经验沉淀）
+
+- **SKILL.md 格式**: YAML frontmatter + Markdown body 是最灵活的 Skill 定义方式，人可读、机器可解析
+- **工具域限制**: Skill 的 allowedTools 与 Persona 的工具集取交集，实现最小权限执行
+- **双源加载**: built-in (config/skills) + custom (data/skills) 分离，内置不可删、自定义可 CRUD
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 新建文件 | 17 (7 源码 + 8 SKILL.md + 1 路由 + 1 类型) |
+| 修改文件 | 4 (shared/index, server/package.json, server/app.ts, server/index.ts) |
+| 代码行数 (净增) | ~790 (skill-manager) + ~164 (routes) |
+| 新增 Package | 1 (`skill-manager`) |
+| 总 Packages | 11 |
+| 新增 API 端点 | 10 |
+| 内置 Skills | 8 个 |
+| 类型检查 | 11/11 通过 |
+
+### 依赖拓扑
+
+```
+@synapse/shared (无依赖)
+  ├── @synapse/agent-core (shared, openai)
+  ├── @synapse/personas (shared, yaml)
+  ├── @synapse/compliance (shared, yaml)
+  ├── @synapse/memory (shared)
+  ├── @synapse/proactive (shared, yaml)
+  ├── @synapse/decision-engine (shared, yaml)
+  ├── @synapse/skill-manager (shared)                ← 新建
+  ├── @synapse/mcp-hub (shared, @modelcontextprotocol/sdk, zod)
+  │     └── @synapse/server (shared, agent-core, mcp-hub, personas, compliance, memory, proactive, decision-engine, skill-manager, hono)
+  └── @synapse/mcp-servers (@modelcontextprotocol/sdk, zod)  ← 独立进程
+```
+
+---
+
+## Session 9 — Phase 7.5: Skill Marketplace
+
+**日期**: 2026-03-03
+
+### Plan（目标）
+
+在 Phase 7 Skill 系统基础上构建 Skill Marketplace，实现技能发布 → 搜索发现 → 安装 → 评分评价 → 排名 → 质量管控 → 自动下架全流程。
+
+### Do（实施）
+
+1. **@synapse/shared 类型扩展**
+   - `MarketplaceSkill`、`MarketplaceReview`、`InstallRecord`
+   - `MarketplaceStats`、`QualityCheckResult`、`PublishInput`
+
+2. **@synapse/skill-marketplace（新包，6 模块）**
+   - `MarketplaceRegistry`: 发布注册表，`_index.json + {id}.json` 持久化
+   - `RatingStore`: 评分评价存储，每用户每技能唯一约束，自动计算平均分
+   - `RankingEngine`: 排名算法（纯函数），`score = downloads(0.3) + rating(0.3) + successRate(0.2) + recency(0.2)`，90 天半衰期
+   - `ReviewEngine`: 发布审核 (validateForPublish) + 质量管控 (qualityCheck: 低评分/高失败率 → suspend)
+   - `SkillInstaller`: 安装/卸载/更新到 `data/skills/installed/`，`installed.json` 记录管理
+   - `SkillMarketplace`: 主编排器，通过 `SkillManagerAdapter` 回调注入避免循环依赖
+
+3. **REST API（17 个端点）**
+   - `GET /api/marketplace/status` 市场统计
+   - `GET /api/marketplace/search` 搜索 (?q=&category=&tag=)
+   - `GET /api/marketplace/browse` 浏览 (?category=&sort=ranking|recent|downloads)
+   - `GET /api/marketplace/top` 排行榜 (?limit=)
+   - `GET /api/marketplace/skills/:id` 详情 + 评价
+   - `POST /api/marketplace/publish` 发布
+   - `PUT /api/marketplace/skills/:id` 更新元数据
+   - `DELETE /api/marketplace/skills/:id` 下架
+   - `POST /api/marketplace/skills/:id/install` 安装
+   - `DELETE /api/marketplace/installed/:id` 卸载
+   - `GET /api/marketplace/installed` 已安装列表
+   - `GET /api/marketplace/installed/updates` 检查更新
+   - `POST /api/marketplace/installed/:id/update` 更新已安装技能
+   - `POST /api/marketplace/skills/:id/reviews` 提交评价
+   - `GET /api/marketplace/skills/:id/reviews` 获取评价
+   - `PUT /api/marketplace/reviews/:id` 修改评价
+   - `DELETE /api/marketplace/reviews/:id` 删除评价
+
+4. **Server 集成**
+   - `SkillManagerAdapter` 回调注入: getSkill, getHistory, reloadInstalledSkills
+   - app.ts 初始化 SkillMarketplace 实例 + 路由挂载
+
+### Check（验证）
+
+| 测试项 | 结果 |
+|--------|------|
+| `bun run typecheck` (12 packages) | 12/12 通过 |
+| 创建 custom skill → 发布 | ✅ 201 + checksum 正确 |
+| 搜索/浏览/排行榜 | ✅ 排名算法生效 |
+| 安装/已安装列表 | ✅ SKILL.md 写入 installed/ |
+| 提交评价 (2 用户) + 自动更新平均分 | ✅ avg=4.5 |
+| 查看统计 | ✅ published=1, installed=1, reviews=2 |
+| 卸载/下架 | ✅ 数据清除正确 |
+| 边界: 重复发布 | ✅ 400 "already published" |
+| 边界: 不存在的 skill | ✅ 400 "not found in SkillManager" |
+| 边界: 重复评价 | ✅ 400 "has already reviewed" |
+| 边界: 无效评分 (6 分) | ✅ 400 "Rating must be between 1 and 5" |
+
+### Act（经验沉淀）
+
+- **回调注入模式**: SkillManagerAdapter 与 proactive/decision-engine 统一模式，server 层桥接注入避免循环依赖
+- **安装概念**: marketplace registry (元数据) 与 installed/ (SKILL.md 文件) 分离，SkillRegistry.loadFromDir() 复用已有加载机制
+- **质量管控**: 评分 < 2.0 且 ≥ 3 条评价 → 自动 suspend；失败率 > 50% 且 ≥ 10 次执行 → suspend；180 天无更新 → warn
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 新建文件 | 10 (6 源码 + 1 路由 + 1 类型 + 2 配置) |
+| 修改文件 | 3 (shared/index, server/package.json, server/app.ts) |
+| 代码行数 (净增) | ~580 (skill-marketplace) + ~190 (routes) |
+| 新增 Package | 1 (`skill-marketplace`) |
+| 总 Packages | 12 |
+| 新增 API 端点 | 17 |
+| 类型检查 | 12/12 通过 |
+
+### 依赖拓扑
+
+```
+@synapse/shared (无依赖)
+  ├── @synapse/agent-core (shared, openai)
+  ├── @synapse/personas (shared, yaml)
+  ├── @synapse/compliance (shared, yaml)
+  ├── @synapse/memory (shared)
+  ├── @synapse/proactive (shared, yaml)
+  ├── @synapse/decision-engine (shared, yaml)
+  ├── @synapse/skill-manager (shared, yaml)
+  ├── @synapse/skill-marketplace (shared)            ← 新建
+  ├── @synapse/mcp-hub (shared, @modelcontextprotocol/sdk, zod)
+  │     └── @synapse/server (shared, agent-core, mcp-hub, personas, compliance, memory, proactive, decision-engine, skill-manager, skill-marketplace, hono)
+  └── @synapse/mcp-servers (@modelcontextprotocol/sdk, zod)  ← 独立进程
+```
