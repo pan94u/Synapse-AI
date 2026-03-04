@@ -89,4 +89,6 @@ export type {
   MarketplaceStats,
   QualityCheckResult,
   PublishInput,
+  PublishReviewResult,
+  ReviewDecision,
 } from './types/marketplace.js';

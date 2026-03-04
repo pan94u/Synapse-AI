@@ -35,7 +35,56 @@ export function createMarketplaceRoutes(marketplace: SkillMarketplace): Hono {
     return c.json({ skills, count: skills.length });
   });
 
-  // 5. GET /api/marketplace/skills/:skillId — 详情 + 评分 + 评价
+  // 5. GET /api/marketplace/pending — 待审核列表（管理员用）
+  routes.get('/marketplace/pending', (c) => {
+    const skills = marketplace.listPendingReview();
+    return c.json({ skills, count: skills.length });
+  });
+
+  // 6. POST /api/marketplace/skills/:skillId/review — 审核决定 (approve/reject)
+  routes.post('/marketplace/skills/:skillId/review', async (c) => {
+    const { skillId } = c.req.param();
+    const body = await c.req.json();
+
+    if (!body.action || !['approve', 'reject'].includes(body.action)) {
+      return c.json({ error: 'action must be "approve" or "reject"' }, 400);
+    }
+    if (!body.reviewer) {
+      return c.json({ error: 'reviewer is required' }, 400);
+    }
+    if (body.action === 'reject' && !body.reason) {
+      return c.json({ error: 'reason is required when rejecting' }, 400);
+    }
+
+    try {
+      const skill = marketplace.reviewSkill(skillId, {
+        skillId,
+        action: body.action,
+        reviewer: body.reviewer,
+        reason: body.reason,
+        decidedAt: new Date().toISOString(),
+      });
+      return c.json({ skill, decision: body.action });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return c.json({ error: message }, 400);
+    }
+  });
+
+  // 7. POST /api/marketplace/skills/:skillId/reactivate — 重新上架
+  routes.post('/marketplace/skills/:skillId/reactivate', (c) => {
+    const { skillId } = c.req.param();
+
+    try {
+      const result = marketplace.reactivate(skillId);
+      return c.json(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return c.json({ error: message }, 400);
+    }
+  });
+
+  // 8. GET /api/marketplace/skills/:skillId — 详情 + 评分 + 评价
   routes.get('/marketplace/skills/:skillId', (c) => {
     const { skillId } = c.req.param();
     const skill = marketplace.getSkill(skillId);
@@ -47,7 +96,7 @@ export function createMarketplaceRoutes(marketplace: SkillMarketplace): Hono {
     return c.json({ skill, reviews });
   });
 
-  // 6. POST /api/marketplace/publish — 发布技能
+  // 9. POST /api/marketplace/publish — 发布技能（含自动审核）
   routes.post('/marketplace/publish', async (c) => {
     const body = await c.req.json();
 
@@ -71,7 +120,7 @@ export function createMarketplaceRoutes(marketplace: SkillMarketplace): Hono {
     }
   });
 
-  // 7. PUT /api/marketplace/skills/:skillId — 更新元数据 (tags, status)
+  // 10. PUT /api/marketplace/skills/:skillId — 更新元数据 (tags, status)
   routes.put('/marketplace/skills/:skillId', async (c) => {
     const { skillId } = c.req.param();
     const body = await c.req.json();
@@ -88,7 +137,7 @@ export function createMarketplaceRoutes(marketplace: SkillMarketplace): Hono {
     return c.json({ skill: updated });
   });
 
-  // 8. DELETE /api/marketplace/skills/:skillId — 下架
+  // 11. DELETE /api/marketplace/skills/:skillId — 下架
   routes.delete('/marketplace/skills/:skillId', (c) => {
     const { skillId } = c.req.param();
     const deleted = marketplace.unpublish(skillId);
@@ -100,7 +149,7 @@ export function createMarketplaceRoutes(marketplace: SkillMarketplace): Hono {
     return c.json({ deleted: true, skillId });
   });
 
-  // 9. POST /api/marketplace/skills/:skillId/install — 安装
+  // 12. POST /api/marketplace/skills/:skillId/install — 安装
   routes.post('/marketplace/skills/:skillId/install', (c) => {
     const { skillId } = c.req.param();
 
@@ -113,7 +162,7 @@ export function createMarketplaceRoutes(marketplace: SkillMarketplace): Hono {
     }
   });
 
-  // 10. DELETE /api/marketplace/installed/:skillId — 卸载
+  // 13. DELETE /api/marketplace/installed/:skillId — 卸载
   routes.delete('/marketplace/installed/:skillId', (c) => {
     const { skillId } = c.req.param();
     const uninstalled = marketplace.uninstall(skillId);
@@ -125,19 +174,19 @@ export function createMarketplaceRoutes(marketplace: SkillMarketplace): Hono {
     return c.json({ uninstalled: true, skillId });
   });
 
-  // 11. GET /api/marketplace/installed — 已安装列表
+  // 14. GET /api/marketplace/installed — 已安装列表
   routes.get('/marketplace/installed', (c) => {
     const records = marketplace.listInstalled();
     return c.json({ installed: records, count: records.length });
   });
 
-  // 12. GET /api/marketplace/installed/updates — 检查更新
+  // 15. GET /api/marketplace/installed/updates — 检查更新
   routes.get('/marketplace/installed/updates', (c) => {
     const updates = marketplace.checkUpdates();
     return c.json({ updates, count: updates.length });
   });
 
-  // 13. POST /api/marketplace/installed/:skillId/update — 更新已安装技能
+  // 16. POST /api/marketplace/installed/:skillId/update — 更新已安装技能
   routes.post('/marketplace/installed/:skillId/update', (c) => {
     const { skillId } = c.req.param();
 
@@ -153,7 +202,7 @@ export function createMarketplaceRoutes(marketplace: SkillMarketplace): Hono {
     }
   });
 
-  // 14. POST /api/marketplace/skills/:skillId/reviews — 提交评价
+  // 17. POST /api/marketplace/skills/:skillId/reviews — 提交评价
   routes.post('/marketplace/skills/:skillId/reviews', async (c) => {
     const { skillId } = c.req.param();
     const body = await c.req.json();
@@ -177,14 +226,14 @@ export function createMarketplaceRoutes(marketplace: SkillMarketplace): Hono {
     }
   });
 
-  // 15. GET /api/marketplace/skills/:skillId/reviews — 获取评价列表
+  // 18. GET /api/marketplace/skills/:skillId/reviews — 获取评价列表
   routes.get('/marketplace/skills/:skillId/reviews', (c) => {
     const { skillId } = c.req.param();
     const reviews = marketplace.getReviews(skillId);
     return c.json({ reviews, count: reviews.length });
   });
 
-  // 16. PUT /api/marketplace/reviews/:reviewId — 修改评价
+  // 19. PUT /api/marketplace/reviews/:reviewId — 修改评价
   routes.put('/marketplace/reviews/:reviewId', async (c) => {
     const { reviewId } = c.req.param();
     const body = await c.req.json();
@@ -206,7 +255,7 @@ export function createMarketplaceRoutes(marketplace: SkillMarketplace): Hono {
     }
   });
 
-  // 17. DELETE /api/marketplace/reviews/:reviewId — 删除评价
+  // 20. DELETE /api/marketplace/reviews/:reviewId — 删除评价
   routes.delete('/marketplace/reviews/:reviewId', (c) => {
     const { reviewId } = c.req.param();
     const deleted = marketplace.deleteReview(reviewId);

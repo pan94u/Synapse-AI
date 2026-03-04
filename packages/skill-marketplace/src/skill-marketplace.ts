@@ -9,12 +9,14 @@ import type {
   PublishInput,
   QualityCheckResult,
   InstallRecord,
+  PublishReviewResult,
+  ReviewDecision,
 } from '@synapse/shared';
 import { MarketplaceRegistry } from './marketplace-registry.js';
 import { RatingStore } from './rating-store.js';
 import { SkillInstaller } from './skill-installer.js';
 import { rank, rankWithScores } from './ranking-engine.js';
-import { validateForPublish, qualityCheck } from './review-engine.js';
+import { validateForPublish, qualityCheck, publishReview } from './review-engine.js';
 
 /** Adapter 接口 — 通过回调访问 SkillManager，避免循环依赖 */
 export interface SkillManagerAdapter {
@@ -47,14 +49,18 @@ export class SkillMarketplace {
 
   // === Publish ===
 
-  publish(input: PublishInput): { skill: MarketplaceSkill; warnings: string[] } {
+  publish(input: PublishInput): {
+    skill: MarketplaceSkill;
+    warnings: string[];
+    reviewResult: PublishReviewResult;
+  } {
     // 1. Resolve skill from SkillManager
     const skillDef = this.adapter.getSkill(input.skillId);
     if (!skillDef) {
       throw new Error(`Skill "${input.skillId}" not found in SkillManager`);
     }
 
-    // 2. Validate for publishing
+    // 2. Validate for publishing (basic checks)
     const validation = validateForPublish(skillDef);
     if (!validation.valid) {
       throw new Error(`Skill validation failed: ${validation.errors.join('; ')}`);
@@ -66,7 +72,25 @@ export class SkillMarketplace {
       throw new Error(`Skill "${input.skillId}" is already published. Use update instead.`);
     }
 
-    // 4. Build SKILL.md content for storage
+    // 4. Auto review (rule engine)
+    const reviewResult = publishReview(skillDef);
+
+    // score < 30 → reject outright
+    if (reviewResult.score < 30) {
+      const failedChecks = reviewResult.checks
+        .filter((c) => !c.pass)
+        .map((c) => `${c.name}: ${c.reason}`)
+        .join('; ');
+      throw new Error(
+        `Skill rejected (score: ${reviewResult.score}/100): ${failedChecks}`,
+      );
+    }
+
+    // 5. Determine initial status based on score
+    const status: MarketplaceSkill['status'] =
+      reviewResult.score >= 70 ? 'active' : 'pending_review';
+
+    // 6. Build SKILL.md content for storage
     const skillContent = this.buildSkillContent(skillDef);
     const checksum = createHash('sha256').update(skillContent).digest('hex');
 
@@ -87,15 +111,15 @@ export class SkillMarketplace {
       size: Buffer.byteLength(skillContent, 'utf-8'),
       dependencies: input.dependencies ?? [],
       compatibility: input.compatibility ?? '',
-      status: 'active',
+      status,
       checksum,
       skillContent,
     };
 
-    // 5. Register in marketplace
+    // 7. Register in marketplace
     this.registry.publish(marketplaceSkill);
 
-    return { skill: marketplaceSkill, warnings: validation.warnings };
+    return { skill: marketplaceSkill, warnings: validation.warnings, reviewResult };
   }
 
   unpublish(skillId: string): boolean {
@@ -115,6 +139,64 @@ export class SkillMarketplace {
 
     this.registry.publish(skill);
     return skill;
+  }
+
+  // === Review ===
+
+  /** 人工审核: 通过或驳回 pending_review 状态的 skill */
+  reviewSkill(skillId: string, decision: ReviewDecision): MarketplaceSkill {
+    const skill = this.registry.get(skillId);
+    if (!skill) {
+      throw new Error(`Skill "${skillId}" not found in marketplace`);
+    }
+    if (skill.status !== 'pending_review') {
+      throw new Error(
+        `Skill "${skillId}" is "${skill.status}", only pending_review skills can be reviewed`,
+      );
+    }
+
+    const newStatus: MarketplaceSkill['status'] =
+      decision.action === 'approve' ? 'active' : 'rejected';
+
+    this.registry.setStatus(skillId, newStatus);
+    return { ...skill, status: newStatus, updatedAt: new Date().toISOString() };
+  }
+
+  /** 获取待人工审核的 skill 列表 */
+  listPendingReview(): MarketplaceSkill[] {
+    return this.registry.search({ status: 'pending_review' });
+  }
+
+  /** 重新上架: 从 suspended/deprecated/rejected 重新走审核流程 */
+  reactivate(skillId: string): {
+    skill: MarketplaceSkill;
+    reviewResult: PublishReviewResult;
+  } {
+    const skill = this.registry.get(skillId);
+    if (!skill) {
+      throw new Error(`Skill "${skillId}" not found in marketplace`);
+    }
+    if (skill.status !== 'suspended' && skill.status !== 'deprecated' && skill.status !== 'rejected') {
+      throw new Error(
+        `Skill "${skillId}" is "${skill.status}", only suspended/deprecated/rejected skills can be reactivated`,
+      );
+    }
+
+    // Resolve the original skill definition for review
+    const skillDef = this.adapter.getSkill(skillId);
+    if (!skillDef) {
+      throw new Error(`Skill "${skillId}" not found in SkillManager, cannot re-review`);
+    }
+
+    const reviewResult = publishReview(skillDef);
+    const newStatus: MarketplaceSkill['status'] =
+      reviewResult.score >= 70 ? 'active' : 'pending_review';
+
+    this.registry.setStatus(skillId, newStatus);
+    return {
+      skill: { ...skill, status: newStatus, updatedAt: new Date().toISOString() },
+      reviewResult,
+    };
   }
 
   // === Install ===
@@ -237,9 +319,12 @@ export class SkillMarketplace {
     const execStats = this.getExecutionStats(review.skillId);
     const qc = qualityCheck(updatedSkill, execStats);
 
-    // Auto-suspend if quality check recommends it
+    // Auto-suspend/deprecate if quality check recommends it
     if (qc.action === 'suspend' && updatedSkill.status === 'active') {
       this.registry.setStatus(review.skillId, 'suspended');
+    }
+    if (qc.action === 'deprecated' && updatedSkill.status === 'active') {
+      this.registry.setStatus(review.skillId, 'deprecated');
     }
 
     return { review: newReview, qualityCheck: qc };
@@ -281,18 +366,21 @@ export class SkillMarketplace {
 
   // === Stats ===
 
-  getStats(): MarketplaceStats {
+  getStats(): MarketplaceStats & { pendingReview: number } {
     const index = this.registry.getIndex();
     const categoryCounts: Record<string, number> = {};
     for (const entry of index) {
       categoryCounts[entry.category] = (categoryCounts[entry.category] ?? 0) + 1;
     }
 
+    const pendingReview = index.filter((e) => e.status === 'pending_review').length;
+
     return {
       totalPublished: index.length,
       totalInstalled: this.installer.listInstalled().length,
       totalReviews: this.ratingStore.getTotalCount(),
       categoryCounts,
+      pendingReview,
     };
   }
 

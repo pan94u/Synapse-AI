@@ -17,7 +17,7 @@ export interface MarketplaceSkill {
   size: number;                   // bytes (SKILL.md content length)
   dependencies: string[];
   compatibility: string;
-  status: 'active' | 'deprecated' | 'suspended';
+  status: 'pending_review' | 'active' | 'deprecated' | 'suspended' | 'rejected';
   checksum: string;               // SHA256
   skillContent: string;           // 原始 SKILL.md 内容，安装时写入本地
 }
@@ -50,10 +50,26 @@ export interface MarketplaceStats {
   categoryCounts: Record<string, number>;
 }
 
+/** 发布自动审核结果 */
+export interface PublishReviewResult {
+  autoApprove: boolean;
+  score: number;        // 0-100
+  checks: { name: string; pass: boolean; reason: string }[];
+}
+
+/** 人工审核决定 */
+export interface ReviewDecision {
+  skillId: string;
+  action: 'approve' | 'reject';
+  reviewer: string;
+  reason?: string;
+  decidedAt: string;
+}
+
 /** 质量检查结果 */
 export interface QualityCheckResult {
   skillId: string;
-  action: 'none' | 'warn' | 'suspend';
+  action: 'none' | 'warn' | 'suspend' | 'deprecated';
   reasons: string[];
 }
 
