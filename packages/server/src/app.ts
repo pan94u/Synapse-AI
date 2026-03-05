@@ -6,6 +6,7 @@ import { MCPHub } from '@synapse/mcp-hub';
 import { PersonaRegistry, loadAllPersonas } from '@synapse/personas';
 import { ComplianceEngine, ComplianceAuditTrail, ApprovalManager } from '@synapse/compliance';
 import { OrgMemoryStore, PersonalMemoryStore, KnowledgeBase } from '@synapse/memory';
+import { BrowserPool } from '@synapse/browser';
 import { ProactiveTaskManager } from '@synapse/proactive';
 import { DecisionEngine } from '@synapse/decision-engine';
 import { SkillManager } from '@synapse/skill-manager';
@@ -23,13 +24,14 @@ import { createDecisionRoutes } from './routes/decision.js';
 import { createSkillRoutes } from './routes/skills.js';
 import { createMarketplaceRoutes } from './routes/marketplace.js';
 
-export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveManager?: ProactiveTaskManager; decisionEngine?: DecisionEngine; skillManager?: SkillManager }> {
+export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveManager?: ProactiveTaskManager; decisionEngine?: DecisionEngine; skillManager?: SkillManager; browserPool?: BrowserPool }> {
   const app = new Hono();
   const hub = new MCPHub();
 
   app.use('*', logger());
   app.use('*', cors());
 
+  app.get('/', (c) => c.json({ name: 'Synapse AI API', version: '0.1.0', docs: '/health' }));
   app.get('/health', (c) => c.json({ status: 'ok' }));
 
   // Initialize Persona Registry
@@ -53,6 +55,19 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
   const personalMemory = new PersonalMemoryStore(resolve(process.cwd(), 'data/memory'));
   const knowledgeBase = new KnowledgeBase(resolve(process.cwd(), 'data/knowledge'));
   console.log('[server] Memory stores initialized');
+
+  // Initialize Browser Pool (lazy — browser launches on first tool call)
+  let browserPool: BrowserPool | undefined;
+  let browserToolDeps: import('@synapse/agent-core').BrowserToolDeps | undefined;
+  try {
+    browserPool = new BrowserPool({
+      screenshotDir: resolve(process.cwd(), 'data/browser/screenshots'),
+    });
+    browserToolDeps = { browserPool: browserPool as unknown as import('@synapse/agent-core').BrowserToolDeps['browserPool'] };
+    console.log('[server] Browser Pool created (lazy init)');
+  } catch (err) {
+    console.warn('[server] Failed to create Browser Pool:', err);
+  }
 
   // Chat routes (model router only, no tools)
   app.route('/api', chatRoutes);
@@ -103,7 +118,8 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
     personalMemory: PersonalMemoryStore;
     knowledgeBase: KnowledgeBase;
     skillToolDeps?: import('@synapse/agent-core').SkillToolDeps;
-  } = { personaRegistry, complianceEngine, auditTrail, orgMemory, personalMemory, knowledgeBase, skillToolDeps };
+    browserToolDeps?: import('@synapse/agent-core').BrowserToolDeps;
+  } = { personaRegistry, complianceEngine, auditTrail, orgMemory, personalMemory, knowledgeBase, skillToolDeps, browserToolDeps };
 
   try {
     await hub.start();
@@ -111,7 +127,7 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
     agentRouteDeps = { ...agentRouteDeps, mcpTools };
 
     // Create a tool registry for persona tool listing
-    const { ToolRegistry, registerBuiltInTools, registerMemoryTools, registerSkillTool } = await import('@synapse/agent-core');
+    const { ToolRegistry, registerBuiltInTools, registerMemoryTools, registerSkillTool, registerBrowserTools } = await import('@synapse/agent-core');
     toolRegistry = new ToolRegistry();
     registerBuiltInTools(toolRegistry);
     for (const t of mcpTools) {
@@ -124,6 +140,10 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
     });
     // Register skill tool for persona tool listing
     registerSkillTool(toolRegistry, skillToolDeps);
+    // Register browser tools for persona tool listing
+    if (browserToolDeps) {
+      registerBrowserTools(toolRegistry, browserToolDeps);
+    }
 
     app.route('/api', createPersonaRoutes(personaRegistry, toolRegistry));
     app.route('/api', createAgentRoutes(agentRouteDeps));
@@ -132,7 +152,7 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
     console.warn('[server] MCP Hub init failed, using default agent:', err);
 
     // Still create tool registry with built-in tools for persona listing
-    const { ToolRegistry, registerBuiltInTools, registerMemoryTools, registerSkillTool } = await import('@synapse/agent-core');
+    const { ToolRegistry, registerBuiltInTools, registerMemoryTools, registerSkillTool, registerBrowserTools } = await import('@synapse/agent-core');
     toolRegistry = new ToolRegistry();
     registerBuiltInTools(toolRegistry);
     registerMemoryTools(toolRegistry, {
@@ -141,6 +161,10 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
     });
     // Register skill tool for persona tool listing
     registerSkillTool(toolRegistry, skillToolDeps);
+    // Register browser tools for persona tool listing
+    if (browserToolDeps) {
+      registerBrowserTools(toolRegistry, browserToolDeps);
+    }
 
     app.route('/api', createPersonaRoutes(personaRegistry, toolRegistry));
     app.route('/api', createAgentRoutes(agentRouteDeps));
@@ -158,6 +182,7 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
         ...(mcpTools ? mcpTools.map((t) => t.definition.name) : []),
         'file_read', 'file_write', 'file_search', 'shell_exec', 'web_fetch',
         ...(orgMemory ? ['memory_read', 'memory_write', 'knowledge_search'] : []),
+        ...(browserToolDeps ? ['browser_navigate', 'browser_click', 'browser_fill', 'browser_screenshot', 'browser_extract', 'browser_evaluate', 'browser_wait'] : []),
       ];
       const personaContext = personaRegistry.buildContext(personaId, allToolNames);
       if (!personaContext) {
@@ -189,6 +214,7 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
         personaContext,
         complianceHooks,
         memoryToolDeps,
+        browserToolDeps,
       });
 
       const result = await agent.run([{ role: 'user', content: userMessage }]);
@@ -246,6 +272,7 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
         ...(mcpTools ? mcpTools.map((t) => t.definition.name) : []),
         'file_read', 'file_write', 'file_search', 'shell_exec', 'web_fetch',
         ...(orgMemory ? ['memory_read', 'memory_write', 'knowledge_search'] : []),
+        ...(browserToolDeps ? ['browser_navigate', 'browser_click', 'browser_fill', 'browser_screenshot', 'browser_extract', 'browser_evaluate', 'browser_wait'] : []),
       ];
       const personaContext = personaRegistry.buildContext(personaId, allToolNames);
       if (!personaContext) {
@@ -277,6 +304,7 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
         personaContext,
         complianceHooks,
         memoryToolDeps,
+        browserToolDeps,
       });
 
       const result = await agent.run([{ role: 'user', content: userMessage }]);
@@ -328,6 +356,7 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
         ...(mcpTools ? mcpTools.map((t) => t.definition.name) : []),
         'file_read', 'file_write', 'file_search', 'shell_exec', 'web_fetch',
         ...(orgMemory ? ['memory_read', 'memory_write', 'knowledge_search'] : []),
+        ...(browserToolDeps ? ['browser_navigate', 'browser_click', 'browser_fill', 'browser_screenshot', 'browser_extract', 'browser_evaluate', 'browser_wait'] : []),
       ];
       const personaContext = personaRegistry.buildContext(personaId, allToolNames);
       if (!personaContext) {
@@ -365,6 +394,7 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
         personaContext,
         complianceHooks,
         memoryToolDeps,
+        browserToolDeps,
       });
 
       const result = await agent.run([{ role: 'user', content: userMessage }]);
@@ -418,5 +448,5 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
     console.warn('[server] Failed to initialize Skill Manager:', err);
   }
 
-  return { app, hub, proactiveManager, decisionEngine, skillManager };
+  return { app, hub, proactiveManager, decisionEngine, skillManager, browserPool };
 }

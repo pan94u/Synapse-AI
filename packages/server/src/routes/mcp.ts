@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { MCPHub } from '@synapse/mcp-hub';
+import type { MCPServerConfig } from '@synapse/shared';
 
 export function createMCPRoutes(hub: MCPHub): Hono {
   const routes = new Hono();
@@ -20,6 +21,34 @@ export function createMCPRoutes(hub: MCPHub): Hono {
     return c.json(status);
   });
 
+  // POST /mcp/servers — add a new MCP server dynamically
+  routes.post('/mcp/servers', async (c) => {
+    try {
+      const config = (await c.req.json()) as MCPServerConfig;
+      if (!config.id || !config.name) {
+        return c.json({ error: 'id and name are required' }, 400);
+      }
+      await hub.addServer(config);
+      const status = hub.getServerStatusById(config.id);
+      return c.json({ success: true, status }, 201);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return c.json({ error: message }, 500);
+    }
+  });
+
+  // DELETE /mcp/servers/:id — remove an MCP server
+  routes.delete('/mcp/servers/:id', async (c) => {
+    const id = c.req.param('id');
+    try {
+      await hub.removeServer(id);
+      return c.json({ success: true });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return c.json({ error: message }, 500);
+    }
+  });
+
   // POST /mcp/servers/:id/restart — restart a server
   routes.post('/mcp/servers/:id/restart', async (c) => {
     const id = c.req.param('id');
@@ -38,11 +67,19 @@ export function createMCPRoutes(hub: MCPHub): Hono {
     try {
       const tools = await hub.getTools();
       return c.json({
-        tools: tools.map((t) => ({
-          name: t.definition.name,
-          description: t.definition.description,
-          permission: t.permission,
-        })),
+        tools: tools.map((t) => {
+          // Extract serverId from prefixed tool name (format: {serverId}_{toolName})
+          const underscoreIdx = t.definition.name.indexOf('_');
+          const server = underscoreIdx > 0
+            ? t.definition.name.slice(0, underscoreIdx)
+            : '';
+          return {
+            name: t.definition.name,
+            description: t.definition.description,
+            server,
+            permission: t.permission,
+          };
+        }),
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';

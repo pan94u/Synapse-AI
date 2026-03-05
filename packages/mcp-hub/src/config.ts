@@ -1,4 +1,4 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile, writeFile, unlink, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { MCPServerConfig } from '@synapse/shared';
 
@@ -63,4 +63,27 @@ export async function loadServerConfigs(configDir: string): Promise<MCPServerCon
   }
 
   return configs;
+}
+
+/**
+ * Save an MCP server config to disk as JSON.
+ */
+export async function saveServerConfig(configDir: string, config: MCPServerConfig): Promise<void> {
+  await mkdir(configDir, { recursive: true });
+  const filePath = join(configDir, `${config.id}.json`);
+  await writeFile(filePath, JSON.stringify(config, null, 2) + '\n', 'utf-8');
+  console.log(`[mcp-hub] Config saved: ${filePath}`);
+}
+
+/**
+ * Delete an MCP server config from disk.
+ */
+export async function deleteServerConfig(configDir: string, id: string): Promise<void> {
+  const filePath = join(configDir, `${id}.json`);
+  try {
+    await unlink(filePath);
+    console.log(`[mcp-hub] Config deleted: ${filePath}`);
+  } catch {
+    console.warn(`[mcp-hub] Config file not found for deletion: ${filePath}`);
+  }
 }

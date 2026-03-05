@@ -18,6 +18,7 @@
     "@synapse/decision-engine": "workspace:*",
     "@synapse/skill-manager": "workspace:*",
     "@synapse/skill-marketplace": "workspace:*",
+    "@synapse/browser": "workspace:*",
     "hono": "^4.7.0"
   }
 }

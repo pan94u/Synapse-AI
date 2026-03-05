@@ -10,6 +10,7 @@ import {
   type ComplianceHooks,
   type MemoryToolDeps,
   type SkillToolDeps,
+  type BrowserToolDeps,
 } from '@synapse/agent-core';
 import type { PersonaRegistry } from '@synapse/personas';
 import type { ComplianceEngine, ComplianceAuditTrail } from '@synapse/compliance';
@@ -24,6 +25,7 @@ interface AgentRouteDeps {
   personalMemory?: PersonalMemoryStore;
   knowledgeBase?: KnowledgeBase;
   skillToolDeps?: SkillToolDeps;
+  browserToolDeps?: BrowserToolDeps;
 }
 
 interface AgentRequest extends ChatRequest {
@@ -54,6 +56,8 @@ export function createAgentRoutes(deps: AgentRouteDeps): Hono {
         ...(deps.orgMemory ? ['memory_read', 'memory_write', 'knowledge_search'] : []),
         // Skill tool
         ...(deps.skillToolDeps ? ['skill_execute'] : []),
+        // Browser tools
+        ...(deps.browserToolDeps ? ['browser_navigate', 'browser_click', 'browser_fill', 'browser_screenshot', 'browser_extract', 'browser_evaluate', 'browser_wait'] : []),
       ];
 
       const personaContext = deps.personaRegistry.buildContext(personaId, allToolNames);
@@ -101,6 +105,7 @@ export function createAgentRoutes(deps: AgentRouteDeps): Hono {
         complianceHooks,
         memoryToolDeps,
         skillToolDeps,
+        browserToolDeps: deps.browserToolDeps,
       });
     } else if (deps.mcpTools && deps.mcpTools.length > 0) {
       const { createAgentWithMCP } = await import('@synapse/agent-core');

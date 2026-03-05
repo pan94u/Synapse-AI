@@ -1,6 +1,6 @@
 import { join } from 'node:path';
-import type { MCPServerStatus, MCPAuditEntry } from '@synapse/shared';
-import { loadServerConfigs } from './config.js';
+import type { MCPServerConfig, MCPServerStatus, MCPAuditEntry } from '@synapse/shared';
+import { loadServerConfigs, saveServerConfig, deleteServerConfig } from './config.js';
 import { MCPRegistry } from './registry.js';
 import { MCPLifecycle } from './lifecycle.js';
 import { MCPHealthMonitor } from './health.js';
@@ -83,6 +83,34 @@ export class MCPHub {
   async restartServer(id: string): Promise<void> {
     await this.lifecycle.restartServer(id);
     this.healthMonitor.scheduleHealthCheck(id);
+  }
+
+  async addServer(config: MCPServerConfig): Promise<void> {
+    this.registry.register(config);
+    this.rateLimiter.configure(config.id, config.rateLimit);
+
+    if (config.autoStart) {
+      await this.lifecycle.startServer(config.id);
+      this.healthMonitor.scheduleHealthCheck(config.id);
+    }
+
+    await saveServerConfig(this.configDir, config);
+    console.log(`[mcp-hub] Server "${config.id}" added`);
+  }
+
+  async removeServer(id: string): Promise<void> {
+    const instance = this.registry.get(id);
+    if (!instance) throw new Error(`Server "${id}" not registered`);
+
+    this.healthMonitor.stopHealthCheck(id);
+
+    if (instance.state === 'connected' || instance.state === 'starting') {
+      await this.lifecycle.stopServer(id);
+    }
+
+    this.registry.unregister(id);
+    await deleteServerConfig(this.configDir, id);
+    console.log(`[mcp-hub] Server "${id}" removed`);
   }
 
   getAuditLog(filter?: {

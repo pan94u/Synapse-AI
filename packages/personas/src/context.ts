@@ -31,7 +31,17 @@ export function buildSystemPrompt(config: PersonaConfig): string {
   ];
 
   if (config.defaultSkills.length > 0) {
-    lines.push('', `【可用技能】${config.defaultSkills.join('、')}`);
+    lines.push(
+      '',
+      '【技能使用规范】',
+      `你拥有以下预定义技能：${config.defaultSkills.join('、')}。`,
+      '当用户的请求涉及以下场景时，你必须优先使用 skill_execute 工具调用对应技能，而不是自己逐个调用底层工具：',
+      '- 用户要求生成报告、摘要、分析（如"投资分析"、"项目尽调"、"LP报告"、"每日摘要"等）',
+      '- 用户的请求与某个技能名称或描述高度匹配',
+      '- 用户明确提到"执行技能"、"用XX技能"、"运行XX"',
+      '技能内部已经预设了完整的工具调用流程和分析模板，比你手动调用单个工具更全面、更结构化。',
+      '只有在用户的请求非常具体（如"查一下基金ID为3的详情"）且不需要综合分析时，才直接调用底层工具。',
+    );
   }
 
   return lines.filter((l) => l !== undefined).join('\n');

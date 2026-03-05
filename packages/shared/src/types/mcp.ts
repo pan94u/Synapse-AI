@@ -9,6 +9,7 @@ export type MCPServerCategory =
   | 'erp'
   | 'analytics'
   | 'document'
+  | 'business'
   | 'custom';
 
 export interface MCPServerConfig {
@@ -49,6 +50,7 @@ export interface MCPMetrics {
 
 export interface MCPServerStatus {
   id: string;
+  name: string;
   status:
     | 'registered'
     | 'starting'

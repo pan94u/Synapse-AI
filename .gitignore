@@ -6,3 +6,5 @@ bun.lockb
 .turbo/
 *.tsbuildinfo
 .DS_Store
+packages/web/.next/
+packages/server/data/

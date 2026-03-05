@@ -8,11 +8,20 @@ import { createMemoryReadTool } from './memory-read.js';
 import { createMemoryWriteTool } from './memory-write.js';
 import { createKnowledgeSearchTool } from './knowledge-search.js';
 import { createSkillExecuteTool } from './skill-execute.js';
+import { createBrowserNavigateTool } from './browser-navigate.js';
+import { createBrowserClickTool } from './browser-click.js';
+import { createBrowserFillTool } from './browser-fill.js';
+import { createBrowserScreenshotTool } from './browser-screenshot.js';
+import { createBrowserExtractTool } from './browser-extract.js';
+import { createBrowserEvaluateTool } from './browser-evaluate.js';
+import { createBrowserWaitTool } from './browser-wait.js';
 import type { MemoryToolDeps } from './memory-types.js';
 import type { SkillToolDeps } from './skill-execute.js';
+import type { BrowserToolDeps } from './browser-types.js';
 
 export type { MemoryToolDeps } from './memory-types.js';
 export type { SkillToolDeps } from './skill-execute.js';
+export type { BrowserToolDeps } from './browser-types.js';
 
 export function registerBuiltInTools(registry: ToolRegistry): void {
   registry.register(fileReadTool);
@@ -32,4 +41,15 @@ export function registerMemoryTools(registry: ToolRegistry, deps: MemoryToolDeps
 /** Register skill_execute tool */
 export function registerSkillTool(registry: ToolRegistry, deps: SkillToolDeps): void {
   registry.register(createSkillExecuteTool(deps));
+}
+
+/** Register browser automation tools (navigate, click, fill, screenshot, extract, evaluate, wait) */
+export function registerBrowserTools(registry: ToolRegistry, deps: BrowserToolDeps): void {
+  registry.register(createBrowserNavigateTool(deps));
+  registry.register(createBrowserClickTool(deps));
+  registry.register(createBrowserFillTool(deps));
+  registry.register(createBrowserScreenshotTool(deps));
+  registry.register(createBrowserExtractTool(deps));
+  registry.register(createBrowserEvaluateTool(deps));
+  registry.register(createBrowserWaitTool(deps));
 }

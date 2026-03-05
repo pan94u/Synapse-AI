@@ -6,6 +6,6 @@ export { MCPHealthMonitor } from './health.js';
 export { MCPRateLimiter } from './rate-limiter.js';
 export { MCPAuditLogger } from './audit.js';
 export { MCPAggregator } from './aggregator.js';
-export { loadServerConfigs } from './config.js';
+export { loadServerConfigs, saveServerConfig, deleteServerConfig } from './config.js';
 export type { AgentTool } from './aggregator.js';
 export type { MCPServerInstance, MCPServerState } from './types.js';

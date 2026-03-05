@@ -12,6 +12,9 @@ export interface ActionDefinition {
   id: string;                   // e.g. "weekly_business_summary"
   name: string;
   description: string;
+  type: 'schedule' | 'event' | 'threshold';
+  schedule?: string;            // cron 表达式 (schedule 类型时)
+  enabled: boolean;
   promptTemplate: string;       // {{variable}} 占位符
   variables?: Record<string, string>;
   targetModel?: string;

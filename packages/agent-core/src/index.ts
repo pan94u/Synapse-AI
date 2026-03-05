@@ -4,7 +4,7 @@ import { ClaudeProvider } from './models/provider-claude.js';
 import { ModelRouter } from './models/router.js';
 import { ToolRegistry } from './tools/registry.js';
 import { ToolExecutor } from './tools/executor.js';
-import { registerBuiltInTools, registerMemoryTools, registerSkillTool } from './tools/built-in/index.js';
+import { registerBuiltInTools, registerMemoryTools, registerSkillTool, registerBrowserTools } from './tools/built-in/index.js';
 import { Agent } from './agent/agent.js';
 import type { Tool } from './tools/types.js';
 import type { MemoryToolDeps } from './tools/built-in/memory-types.js';
@@ -19,8 +19,8 @@ export type { ModelProvider, CompletionParams, CompletionResult, StreamChunk } f
 export { ToolRegistry } from './tools/registry.js';
 export { ToolExecutor } from './tools/executor.js';
 export type { ComplianceHooks } from './tools/executor.js';
-export { registerBuiltInTools, registerMemoryTools, registerSkillTool } from './tools/built-in/index.js';
-export type { MemoryToolDeps, SkillToolDeps } from './tools/built-in/index.js';
+export { registerBuiltInTools, registerMemoryTools, registerSkillTool, registerBrowserTools } from './tools/built-in/index.js';
+export type { MemoryToolDeps, SkillToolDeps, BrowserToolDeps } from './tools/built-in/index.js';
 export type { Tool } from './tools/types.js';
 export { createMemoryReadTool } from './tools/built-in/memory-read.js';
 export { createMemoryWriteTool } from './tools/built-in/memory-write.js';
@@ -133,6 +133,7 @@ export interface AgentWithComplianceOptions {
   complianceHooks?: import('./tools/executor.js').ComplianceHooks;
   memoryToolDeps?: MemoryToolDeps;
   skillToolDeps?: import('./tools/built-in/skill-execute.js').SkillToolDeps;
+  browserToolDeps?: import('./tools/built-in/browser-types.js').BrowserToolDeps;
 }
 
 /**
@@ -156,6 +157,10 @@ export function createAgentWithCompliance(options: AgentWithComplianceOptions): 
 
   if (options.skillToolDeps) {
     registerSkillTool(registry, options.skillToolDeps);
+  }
+
+  if (options.browserToolDeps) {
+    registerBrowserTools(registry, options.browserToolDeps);
   }
 
   const executor = new ToolExecutor(

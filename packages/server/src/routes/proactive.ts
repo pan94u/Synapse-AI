@@ -18,11 +18,14 @@ export function createProactiveRoutes(manager: ProactiveTaskManager): Hono {
   // POST /api/proactive/actions/:actionId/execute — 手动执行 action
   routes.post('/proactive/actions/:actionId/execute', async (c) => {
     const { actionId } = c.req.param();
-    const body = await c.req.json<{ personaId: string; variables?: Record<string, string> }>();
-
-    if (!body.personaId) {
-      return c.json({ error: 'personaId is required' }, 400);
+    let body: { personaId?: string; variables?: Record<string, string> } = {};
+    try {
+      body = await c.req.json();
+    } catch {
+      // empty body is fine for manual execution
     }
+
+    const personaId = body.personaId || 'ceo';
 
     const action = manager.getActionRegistry().get(actionId);
     if (!action) {
@@ -32,7 +35,7 @@ export function createProactiveRoutes(manager: ProactiveTaskManager): Hono {
     try {
       const execution = await manager.executeAction(
         actionId,
-        body.personaId,
+        personaId,
         'schedule',
         'manual',
         body.variables,

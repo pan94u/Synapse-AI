@@ -34,6 +34,7 @@ export function createInitialInstance(config: MCPServerConfig): MCPServerInstanc
 export function instanceToStatus(instance: MCPServerInstance): MCPServerStatus {
   return {
     id: instance.config.id,
+    name: instance.config.name,
     status: instance.state,
     connectedAt: instance.connectedAt?.toISOString(),
     lastHealthCheck: instance.lastHealthCheck?.toISOString(),

@@ -7,6 +7,9 @@ interface RawAction {
   id: string;
   name: string;
   description: string;
+  type?: 'schedule' | 'event' | 'threshold';
+  schedule?: string;
+  enabled?: boolean;
   prompt_template: string;
   variables?: Record<string, string>;
   target_model?: string;
@@ -31,6 +34,9 @@ export function loadAllActions(configDir: string): Map<string, ActionDefinition>
         id: raw.id,
         name: raw.name,
         description: raw.description,
+        type: raw.type ?? 'schedule',
+        schedule: raw.schedule,
+        enabled: raw.enabled ?? true,
         promptTemplate: raw.prompt_template,
         variables: raw.variables,
         targetModel: raw.target_model,
