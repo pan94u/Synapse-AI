@@ -1,6 +1,8 @@
 id: onboarding_checklist
 name: 入职清单生成
 description: 当新员工入职事件触发时，自动生成入职待办清单。
+type: event
+enabled: true
 
 prompt_template: |
   今天是 {{CURRENT_DATE}}，系统检测到新员工入职事件。

@@ -1,0 +1,12 @@
+{
+  "id": "10c6cc13-d315-4246-b7de-bd547b231c27",
+  "skillId": "deal-review",
+  "personaId": "investment-manager",
+  "triggerType": "agent_tool",
+  "parameters": {
+    "dealName": "元气森林"
+  },
+  "status": "error",
+  "error": "Missing required parameter: \"deal-id\"",
+  "startedAt": "2026-03-04T15:11:37.709Z"
+}

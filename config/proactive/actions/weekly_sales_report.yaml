@@ -1,6 +1,9 @@
 id: weekly_sales_report
 name: 每周销售报告
 description: 每周一自动生成销售周报，汇总业绩和商机进展。
+type: schedule
+schedule: '0 9 * * 1'
+enabled: true
 
 prompt_template: |
   今天是 {{CURRENT_DATE}}，请生成本周销售报告。

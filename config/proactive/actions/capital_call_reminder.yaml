@@ -1,0 +1,37 @@
+id: capital_call_reminder
+name: 催缴到期提醒
+description: 每周一自动检查逾期和即将到期的催缴通知，生成跟进建议。
+type: schedule
+schedule: '0 9 * * 1'
+enabled: true
+
+prompt_template: |
+  今天是 {{CURRENT_DATE}}，请生成本周催缴提醒报告。
+
+  请依次调用以下工具获取数据：
+  1. invest_todo_items — 获取逾期催缴清单
+  2. invest_list_funds — 获取各基金信息
+  3. invest_list_lps — 获取 LP 列表
+
+  请基于真实数据汇总以下内容：
+
+  ## 逾期催缴（紧急）
+  - LP 名称、所属基金、催缴金额、逾期天数
+  - 建议跟进措施
+
+  ## 本周到期催缴
+  - LP 名称、所属基金、催缴金额、到期日
+  - 提醒优先级
+
+  ## 未来 30 天催缴预告
+  - 即将到期的催缴时间表
+  - 预计回收金额
+
+  ## 催缴完成率
+  - 各基金催缴完成率
+  - 整体催缴健康度评估
+
+  请用表格形式呈现数据，逾期项用红色标注，紧急程度分级。
+
+variables:
+  report_type: weekly

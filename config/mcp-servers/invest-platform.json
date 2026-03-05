@@ -1,0 +1,36 @@
+{
+  "id": "invest-platform",
+  "name": "投资管理平台",
+  "description": "连接投资管理平台 REST API，提供基金、项目、组合、LP 管理能力",
+  "transport": "stdio",
+  "command": "bun",
+  "args": ["run", "packages/mcp-servers/src/invest-platform/index.ts"],
+  "env": {
+    "INVEST_API_URL": "${env:INVEST_API_URL}",
+    "INVEST_USER_EMAIL": "${env:INVEST_USER_EMAIL}",
+    "INVEST_USER_PASSWORD": "${env:INVEST_USER_PASSWORD}"
+  },
+  "enabled": true,
+  "autoStart": true,
+  "healthCheck": {
+    "interval": 30000,
+    "timeout": 10000,
+    "retries": 3
+  },
+  "rateLimit": {
+    "maxRequests": 120,
+    "windowMs": 60000
+  },
+  "permissions": {
+    "tools": ["invest_*"],
+    "resources": ["*"],
+    "requireApproval": [
+      "invest_create_deal",
+      "invest_advance_deal",
+      "invest_add_valuation",
+      "invest_create_capital_call"
+    ]
+  },
+  "tags": ["investment", "fund", "deal", "portfolio"],
+  "category": "business"
+}

@@ -1,0 +1,27 @@
+{
+  "id": "erp",
+  "name": "ERP Server",
+  "description": "运营/供应链管理（库存、订单、采购、生产）",
+  "transport": "stdio",
+  "command": "bun",
+  "args": ["run", "packages/mcp-servers/src/erp/index.ts"],
+  "env": {},
+  "enabled": false,
+  "autoStart": false,
+  "healthCheck": {
+    "interval": 30000,
+    "timeout": 5000,
+    "retries": 3
+  },
+  "rateLimit": {
+    "maxRequests": 100,
+    "windowMs": 60000
+  },
+  "permissions": {
+    "tools": ["erp_*"],
+    "resources": ["*"],
+    "requireApproval": []
+  },
+  "tags": ["erp", "inventory", "order", "procurement", "production"],
+  "category": "business"
+}

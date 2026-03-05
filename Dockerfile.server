@@ -1,0 +1,47 @@
+FROM oven/bun:1-alpine
+
+WORKDIR /app
+
+# Skip playwright browser download
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+
+# Copy workspace config
+COPY package.json pnpm-workspace.yaml bunfig.toml turbo.json tsconfig.base.json ./
+
+# Copy all package.json files for dependency resolution
+COPY packages/shared/package.json packages/shared/
+COPY packages/agent-core/package.json packages/agent-core/
+COPY packages/mcp-hub/package.json packages/mcp-hub/
+COPY packages/mcp-servers/package.json packages/mcp-servers/
+COPY packages/personas/package.json packages/personas/
+COPY packages/compliance/package.json packages/compliance/
+COPY packages/memory/package.json packages/memory/
+COPY packages/proactive/package.json packages/proactive/
+COPY packages/decision-engine/package.json packages/decision-engine/
+COPY packages/skill-manager/package.json packages/skill-manager/
+COPY packages/skill-marketplace/package.json packages/skill-marketplace/
+COPY packages/browser/package.json packages/browser/
+COPY packages/server/package.json packages/server/
+COPY packages/web/package.json packages/web/
+
+# Install dependencies
+RUN bun install --frozen-lockfile || bun install
+
+# Copy source code (all packages needed by server)
+COPY packages/shared/ packages/shared/
+COPY packages/agent-core/ packages/agent-core/
+COPY packages/mcp-hub/ packages/mcp-hub/
+COPY packages/mcp-servers/ packages/mcp-servers/
+COPY packages/personas/ packages/personas/
+COPY packages/compliance/ packages/compliance/
+COPY packages/memory/ packages/memory/
+COPY packages/proactive/ packages/proactive/
+COPY packages/decision-engine/ packages/decision-engine/
+COPY packages/skill-manager/ packages/skill-manager/
+COPY packages/skill-marketplace/ packages/skill-marketplace/
+COPY packages/browser/ packages/browser/
+COPY packages/server/ packages/server/
+
+EXPOSE 3001
+
+CMD ["bun", "run", "packages/server/src/index.ts"]

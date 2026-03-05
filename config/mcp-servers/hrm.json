@@ -1,0 +1,27 @@
+{
+  "id": "hrm",
+  "name": "HRM Server",
+  "description": "人力资源管理（员工、部门、考勤）",
+  "transport": "stdio",
+  "command": "bun",
+  "args": ["run", "packages/mcp-servers/src/hrm/index.ts"],
+  "env": {},
+  "enabled": false,
+  "autoStart": false,
+  "healthCheck": {
+    "interval": 30000,
+    "timeout": 5000,
+    "retries": 3
+  },
+  "rateLimit": {
+    "maxRequests": 100,
+    "windowMs": 60000
+  },
+  "permissions": {
+    "tools": ["hrm_*"],
+    "resources": ["*"],
+    "requireApproval": []
+  },
+  "tags": ["hrm", "employee", "attendance"],
+  "category": "business"
+}

@@ -1,0 +1,61 @@
+# Stage 1: Install dependencies and build
+FROM oven/bun:1-alpine AS builder
+
+WORKDIR /app
+
+# Skip playwright browser download
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+
+# Need node + npm for next build (webpack runs on node)
+RUN apk add --no-cache nodejs npm
+
+# Copy workspace config
+COPY package.json pnpm-workspace.yaml bunfig.toml turbo.json tsconfig.base.json ./
+
+# Copy all package.json files for dependency resolution
+COPY packages/shared/package.json packages/shared/
+COPY packages/agent-core/package.json packages/agent-core/
+COPY packages/mcp-hub/package.json packages/mcp-hub/
+COPY packages/mcp-servers/package.json packages/mcp-servers/
+COPY packages/personas/package.json packages/personas/
+COPY packages/compliance/package.json packages/compliance/
+COPY packages/memory/package.json packages/memory/
+COPY packages/proactive/package.json packages/proactive/
+COPY packages/decision-engine/package.json packages/decision-engine/
+COPY packages/skill-manager/package.json packages/skill-manager/
+COPY packages/skill-marketplace/package.json packages/skill-marketplace/
+COPY packages/browser/package.json packages/browser/
+COPY packages/server/package.json packages/server/
+COPY packages/web/package.json packages/web/
+
+# Install dependencies (bun handles workspace:* protocol)
+RUN bun install --frozen-lockfile || bun install
+
+# Copy source — shared (transpiled by Next.js) + web
+COPY packages/shared/ packages/shared/
+COPY packages/web/ packages/web/
+
+# Pre-install @types/node to prevent next build auto-install via npm
+# (npm fails on workspace:* protocol in root package.json)
+RUN cd /app/packages/web && bun add -d @types/node
+
+# Build Next.js (standalone output)
+# Resolve next binary through bun's .bun/ cache symlinks
+WORKDIR /app/packages/web
+RUN NEXT_BIN=$(readlink -f node_modules/next/dist/bin/next) && \
+    node "$NEXT_BIN" build
+
+# Stage 2: Production runtime
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Copy standalone output
+COPY --from=builder /app/packages/web/.next/standalone ./
+COPY --from=builder /app/packages/web/.next/static ./packages/web/.next/static
+
+EXPOSE 3000
+
+CMD ["node", "packages/web/server.js"]

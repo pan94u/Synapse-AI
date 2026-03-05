@@ -1,6 +1,9 @@
 id: daily_financial_summary
 name: 每日财务摘要
 description: 每日自动生成财务日报，汇总收支和预算执行情况。
+type: schedule
+schedule: '0 8 * * *'
+enabled: true
 
 prompt_template: |
   今天是 {{CURRENT_DATE}}，请生成今日财务摘要。

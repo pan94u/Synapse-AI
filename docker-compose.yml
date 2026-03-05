@@ -1,0 +1,32 @@
+services:
+  synapse-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: synapse-server
+    ports:
+      - "19301:3001"
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data
+    env_file:
+      - .env.local
+    environment:
+      - PORT=3001
+    restart: unless-stopped
+
+  synapse-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: synapse-web
+    ports:
+      - "19300:3000"
+    environment:
+      - BACKEND_URL=http://synapse-server:3001
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
+    depends_on:
+      - synapse-server
+    restart: unless-stopped
+

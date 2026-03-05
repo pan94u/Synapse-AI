@@ -1,0 +1,22 @@
+[
+  {
+    "id": "14df994e-79c6-4c74-a208-223c0a348ac7",
+    "taskId": "ceo:daily_investment_summary",
+    "personaId": "ceo",
+    "action": "daily_investment_summary",
+    "triggerType": "schedule",
+    "status": "success",
+    "startedAt": "2026-03-04T14:00:34.486Z",
+    "completedAt": "2026-03-04T14:00:59.605Z"
+  },
+  {
+    "id": "da97a8a1-320d-475f-80b1-9dbfb8b14e89",
+    "taskId": "ceo:daily_investment_summary",
+    "personaId": "ceo",
+    "action": "daily_investment_summary",
+    "triggerType": "schedule",
+    "status": "success",
+    "startedAt": "2026-03-04T14:07:03.802Z",
+    "completedAt": "2026-03-04T14:07:52.999Z"
+  }
+]

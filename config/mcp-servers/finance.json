@@ -1,0 +1,27 @@
+{
+  "id": "finance",
+  "name": "Finance Server",
+  "description": "财务管理（预算、报销、收入、现金流）",
+  "transport": "stdio",
+  "command": "bun",
+  "args": ["run", "packages/mcp-servers/src/finance/index.ts"],
+  "env": {},
+  "enabled": false,
+  "autoStart": false,
+  "healthCheck": {
+    "interval": 30000,
+    "timeout": 5000,
+    "retries": 3
+  },
+  "rateLimit": {
+    "maxRequests": 100,
+    "windowMs": 60000
+  },
+  "permissions": {
+    "tools": ["finance_*"],
+    "resources": ["*"],
+    "requireApproval": []
+  },
+  "tags": ["finance", "budget", "expense", "revenue"],
+  "category": "business"
+}

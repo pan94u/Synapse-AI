@@ -1,0 +1,27 @@
+{
+  "id": "feishu",
+  "name": "Feishu Server",
+  "description": "飞书协作（消息、日历、审批）",
+  "transport": "stdio",
+  "command": "bun",
+  "args": ["run", "packages/mcp-servers/src/feishu/index.ts"],
+  "env": {},
+  "enabled": false,
+  "autoStart": false,
+  "healthCheck": {
+    "interval": 30000,
+    "timeout": 5000,
+    "retries": 3
+  },
+  "rateLimit": {
+    "maxRequests": 100,
+    "windowMs": 60000
+  },
+  "permissions": {
+    "tools": ["feishu_*"],
+    "resources": ["*"],
+    "requireApproval": ["feishu_send_message", "feishu_create_approval"]
+  },
+  "tags": ["feishu", "message", "calendar", "approval"],
+  "category": "business"
+}

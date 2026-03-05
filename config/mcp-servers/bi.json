@@ -1,0 +1,27 @@
+{
+  "id": "bi",
+  "name": "BI Server",
+  "description": "商业智能（KPI、仪表盘、报表）",
+  "transport": "stdio",
+  "command": "bun",
+  "args": ["run", "packages/mcp-servers/src/bi/index.ts"],
+  "env": {},
+  "enabled": false,
+  "autoStart": false,
+  "healthCheck": {
+    "interval": 30000,
+    "timeout": 5000,
+    "retries": 3
+  },
+  "rateLimit": {
+    "maxRequests": 100,
+    "windowMs": 60000
+  },
+  "permissions": {
+    "tools": ["bi_*"],
+    "resources": ["*"],
+    "requireApproval": []
+  },
+  "tags": ["bi", "kpi", "dashboard", "report"],
+  "category": "business"
+}

@@ -20,5 +20,41 @@
       "Git",
       "工程"
     ]
+  },
+  {
+    "id": "investment-policy-001",
+    "category": "policies",
+    "title": "投资决策制度",
+    "tags": [
+      "投资",
+      "决策",
+      "审批",
+      "投委会",
+      "制度"
+    ]
+  },
+  {
+    "id": "deal-evaluation-001",
+    "category": "knowledge",
+    "title": "项目评估标准",
+    "tags": [
+      "投资",
+      "评估",
+      "尽调",
+      "行业",
+      "财务指标"
+    ]
+  },
+  {
+    "id": "fund-strategy-001",
+    "category": "policies",
+    "title": "基金投资策略",
+    "tags": [
+      "基金",
+      "投资策略",
+      "资产配置",
+      "退出",
+      "LP管理"
+    ]
   }
 ]

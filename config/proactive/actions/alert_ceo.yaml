@@ -1,6 +1,8 @@
 id: alert_ceo
 name: CEO 异常预警
 description: 当检测到财务异常事件时，自动生成预警报告给 CEO。
+type: event
+enabled: true
 
 prompt_template: |
   今天是 {{CURRENT_DATE}}，系统检测到以下异常事件：

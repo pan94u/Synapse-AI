@@ -1,6 +1,8 @@
 id: deal_update_notification
 name: 商机阶段变更通知
 description: 当商机阶段发生变化时，自动通知相关人员并生成分析。
+type: event
+enabled: true
 
 prompt_template: |
   今天是 {{CURRENT_DATE}}，系统检测到商机阶段变更。

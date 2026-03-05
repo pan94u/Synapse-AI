@@ -1,0 +1,10 @@
+{
+  "id": "4c7adf27-c333-4a83-a7a3-86e60b503b2f",
+  "personaId": "finance-controller",
+  "title": "阈值预警: budget-warning",
+  "content": "预算提醒：预算使用率已达 0.85，请注意控制支出。",
+  "source": "proactive:threshold:budget-warning",
+  "severity": "warning",
+  "read": false,
+  "createdAt": "2026-03-04T23:17:29.250Z"
+}

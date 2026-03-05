@@ -1,0 +1,69 @@
+id: investment
+rules:
+  - id: invest-create-deal-approval
+    name: 新建项目审批
+    phase: pre
+    when:
+      tool: "invest-platform_invest_create_deal"
+    conditions:
+      - if: "true"
+        then: require_approval
+        approver: investment-manager
+        reason: 新建投资项目需要投资总监审批
+    audit: always
+
+  - id: invest-advance-deal-approval
+    name: 项目阶段推进审批
+    phase: pre
+    when:
+      tool: "invest-platform_invest_advance_deal"
+    conditions:
+      - if: "input.stage IN ['INVESTMENT_COMMITTEE', 'CLOSING']"
+        then: require_approval
+        approver: ceo
+        reason: 投委会和交割阶段推进需要 CEO 审批
+      - if: "input.stage NOT IN ['INVESTMENT_COMMITTEE', 'CLOSING']"
+        then: require_approval
+        approver: investment-manager
+        reason: 其他阶段推进需要投资总监审批
+    audit: always
+
+  - id: invest-capital-call-approval
+    name: 催缴审批
+    phase: pre
+    when:
+      tool: "invest-platform_invest_create_capital_call"
+    conditions:
+      - if: "input.amount > 10000000"
+        then: require_approval
+        approver: ceo
+        reason: 催缴金额超过 1000 万需要 CEO 审批
+      - if: "input.amount <= 10000000"
+        then: require_approval
+        approver: investment-manager
+        reason: 催缴操作需要投资总监审批
+    audit: always
+
+  - id: invest-valuation-approval
+    name: 估值记录审批
+    phase: pre
+    when:
+      tool: "invest-platform_invest_add_valuation"
+    conditions:
+      - if: "true"
+        then: require_approval
+        approver: investment-manager
+        reason: 添加估值记录需要投资总监审批
+    audit: always
+
+  - id: invest-audit-trail
+    name: 投资操作审计
+    phase: post
+    when:
+      tool: "invest-platform_invest_*"
+    actions:
+      - flag_if:
+          condition: "true"
+          severity: info
+          message: 投资平台操作已记录审计日志
+    audit: always

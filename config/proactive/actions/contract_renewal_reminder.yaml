@@ -1,6 +1,8 @@
 id: contract_renewal_reminder
 name: 合同续签提醒
 description: 当合同即将到期时，自动生成续签提醒和建议。
+type: event
+enabled: true
 
 prompt_template: |
   今天是 {{CURRENT_DATE}}，系统检测到合同即将到期。

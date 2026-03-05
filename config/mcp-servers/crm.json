@@ -1,0 +1,27 @@
+{
+  "id": "crm",
+  "name": "CRM Server",
+  "description": "客户关系管理（客户、商机、互动）",
+  "transport": "stdio",
+  "command": "bun",
+  "args": ["run", "packages/mcp-servers/src/crm/index.ts"],
+  "env": {},
+  "enabled": false,
+  "autoStart": false,
+  "healthCheck": {
+    "interval": 30000,
+    "timeout": 5000,
+    "retries": 3
+  },
+  "rateLimit": {
+    "maxRequests": 100,
+    "windowMs": 60000
+  },
+  "permissions": {
+    "tools": ["crm_*"],
+    "resources": ["*"],
+    "requireApproval": ["crm_log_activity"]
+  },
+  "tags": ["crm", "customer", "sales", "opportunity"],
+  "category": "business"
+}

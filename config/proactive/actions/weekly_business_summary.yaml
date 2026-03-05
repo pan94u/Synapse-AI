@@ -1,6 +1,9 @@
 id: weekly_business_summary
 name: 每周经营摘要
 description: 每周一自动生成高管经营周报，汇总各部门关键指标和重要事项。
+type: schedule
+schedule: '0 9 * * 1'
+enabled: true
 
 prompt_template: |
   今天是 {{CURRENT_DATE}}，请生成本周经营摘要报告。

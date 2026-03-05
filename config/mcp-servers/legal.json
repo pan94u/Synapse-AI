@@ -1,0 +1,27 @@
+{
+  "id": "legal",
+  "name": "Legal Server",
+  "description": "法务合同管理（合同、合规、审批）",
+  "transport": "stdio",
+  "command": "bun",
+  "args": ["run", "packages/mcp-servers/src/legal/index.ts"],
+  "env": {},
+  "enabled": false,
+  "autoStart": false,
+  "healthCheck": {
+    "interval": 30000,
+    "timeout": 5000,
+    "retries": 3
+  },
+  "rateLimit": {
+    "maxRequests": 100,
+    "windowMs": 60000
+  },
+  "permissions": {
+    "tools": ["legal_*"],
+    "resources": ["*"],
+    "requireApproval": []
+  },
+  "tags": ["legal", "contract", "compliance", "approval"],
+  "category": "business"
+}

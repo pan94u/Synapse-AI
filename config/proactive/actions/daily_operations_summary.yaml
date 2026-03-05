@@ -1,6 +1,9 @@
 id: daily_operations_summary
 name: 每日运营摘要
 description: 每日自动生成运营日报，汇总供应链和库存状况。
+type: schedule
+schedule: '0 8 * * *'
+enabled: true
 
 prompt_template: |
   今天是 {{CURRENT_DATE}}，请生成今日运营摘要。

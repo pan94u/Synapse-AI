@@ -1,6 +1,9 @@
 id: weekly_attendance_summary
 name: 每周考勤汇总
 description: 每周一自动生成员工考勤周报，标注异常情况。
+type: schedule
+schedule: '0 9 * * 1'
+enabled: true
 
 prompt_template: |
   今天是 {{CURRENT_DATE}}，请生成上周员工考勤汇总报告。

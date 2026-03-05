@@ -53,3 +53,20 @@ objectives:
         name: 员工满意度达到85分
         metric_id: employee_satisfaction
         target_value: 85
+
+  - id: obj-investment
+    name: 投资管理卓越
+    target: "管线规模≥5亿，组合IRR≥15%，催缴完成率≥90%"
+    key_results:
+      - id: kr-pipeline-value
+        name: 投资管线总值达到5亿元
+        metric_id: deal_pipeline_value
+        target_value: 50000
+      - id: kr-portfolio-irr
+        name: 组合IRR达到15%
+        metric_id: portfolio_irr
+        target_value: 15
+      - id: kr-capital-call
+        name: 催缴完成率达到90%
+        metric_id: capital_call_completion
+        target_value: 90

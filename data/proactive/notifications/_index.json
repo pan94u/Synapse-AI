@@ -1,0 +1,23 @@
+[
+  {
+    "id": "2c7bc3cf-f3bc-4236-a5bb-198dfd013d04",
+    "personaId": "ceo",
+    "severity": "info",
+    "read": false,
+    "createdAt": "2026-03-04T14:00:59.608Z"
+  },
+  {
+    "id": "cb2540c7-c050-4c5d-84ff-8f54a30a4fcf",
+    "personaId": "ceo",
+    "severity": "info",
+    "read": true,
+    "createdAt": "2026-03-04T14:07:53.000Z"
+  },
+  {
+    "id": "4c7adf27-c333-4a83-a7a3-86e60b503b2f",
+    "personaId": "finance-controller",
+    "severity": "warning",
+    "read": false,
+    "createdAt": "2026-03-04T23:17:29.250Z"
+  }
+]

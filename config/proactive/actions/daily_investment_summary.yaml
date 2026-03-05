@@ -1,0 +1,40 @@
+id: daily_investment_summary
+name: 每日投资摘要
+description: 每日自动生成投资管理日报，汇总管线动态、组合表现和待办事项。
+type: schedule
+schedule: '0 8 * * *'
+enabled: true
+
+prompt_template: |
+  今天是 {{CURRENT_DATE}}，请生成今日投资管理摘要。
+
+  请依次调用以下工具获取数据：
+  1. invest_dashboard — 获取全局投资概览
+  2. invest_deal_kanban — 获取项目管线各阶段分布
+  3. invest_todo_items — 获取逾期催缴和停滞项目
+  4. invest_list_portfolios — 获取组合概览
+
+  请基于真实数据汇总以下内容：
+
+  ## 投资概况
+  - AUM 总额、活跃基金数、在管项目数
+  - 较上一工作日变化
+
+  ## 管线动态
+  - 各阶段项目数量分布
+  - 昨日推进的项目
+  - 新增项目
+
+  ## 待办事项
+  - 逾期催缴（LP 名称、金额、逾期天数）
+  - 停滞项目（>30 天无推进）
+  - 今日需关注事项
+
+  ## 组合快照
+  - 各组合市值与盈亏
+  - 异常波动提示
+
+  请以结构化格式输出，关键数字用粗体标注。
+
+variables:
+  report_type: daily

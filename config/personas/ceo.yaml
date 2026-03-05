@@ -11,16 +11,31 @@ default_skills:
   - monthly-report
   - data-analysis
   - customer-analysis
+  - investment-analysis
 
 allowed_mcp_servers:
   - database
   - http-api
+  - invest-platform
 
 allowed_tools:
   - "database_db_query"
   - "database_db_list_tables"
   - "database_db_describe_table"
   - "http_request"
+  - "invest-platform_invest_dashboard"
+  - "invest-platform_invest_list_funds"
+  - "invest-platform_invest_get_fund"
+  - "invest-platform_invest_list_deals"
+  - "invest-platform_invest_deal_kanban"
+  - "invest-platform_invest_get_deal"
+  - "invest-platform_invest_list_portfolios"
+  - "invest-platform_invest_get_portfolio"
+  - "invest-platform_invest_portfolio_metrics"
+  - "invest-platform_invest_list_lps"
+  - "invest-platform_invest_get_lp"
+  - "invest-platform_invest_revenue_curve"
+  - "invest-platform_invest_todo_items"
   - "memory_read"
   - "memory_write"
   - "knowledge_search"
@@ -33,8 +48,11 @@ proactive_tasks:
     action: weekly_business_summary
   - trigger: financial_anomaly
     action: alert_ceo
+  - schedule: "0 9 * * 1"
+    action: daily_investment_summary
 
 org_memory_access:
   - "company/*"
   - "strategy/*"
   - "finance/summary/*"
+  - "investment/*"

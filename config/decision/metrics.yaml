@@ -93,3 +93,56 @@ metrics:
       - condition: "value > 40"
         severity: warning
         message: "综合费用率偏高: {value}%"
+
+  - id: deal_pipeline_value
+    name: 投资管线总值
+    description: 所有在管项目的估值总额，反映管线规模和投资活跃度
+    query: "请通过 invest_deal_kanban 获取管线数据，计算各阶段项目估值总额。"
+    frequency: weekly
+    unit: "万元"
+    alert_rules:
+      - condition: "value < 30000"
+        severity: warning
+        message: "管线总值低于 3 亿: {value} 万元"
+
+  - id: fund_deployment_rate
+    name: 基金部署率
+    description: 各基金已投资金额占总规模的比例
+    query: "请通过 invest_list_funds 获取基金数据，计算各基金的部署率（已投/总规模）。"
+    frequency: weekly
+    unit: "%"
+    alert_rules:
+      - condition: "value > 90"
+        severity: warning
+        message: "基金部署率过高: {value}%，剩余可投额度不足"
+      - condition: "value < 30"
+        severity: warning
+        message: "基金部署率偏低: {value}%，需加快投资节奏"
+
+  - id: portfolio_irr
+    name: 组合 IRR
+    description: 投资组合内部收益率
+    query: "请通过 invest_portfolio_metrics 获取各组合 IRR 数据，计算加权平均 IRR。"
+    frequency: monthly
+    unit: "%"
+    alert_rules:
+      - condition: "value < 10"
+        severity: warning
+        message: "组合 IRR 低于 10%: {value}%"
+      - condition: "value < 5"
+        severity: critical
+        message: "组合 IRR 跌破 5%: {value}%，需检查投资策略"
+
+  - id: capital_call_completion
+    name: 催缴完成率
+    description: LP 催缴到账金额占应缴金额的比例
+    query: "请通过 invest_todo_items 和 invest_list_funds 获取催缴数据，计算整体催缴完成率。"
+    frequency: weekly
+    unit: "%"
+    alert_rules:
+      - condition: "value < 80"
+        severity: warning
+        message: "催缴完成率低于 80%: {value}%"
+      - condition: "value < 60"
+        severity: critical
+        message: "催缴完成率严重不足: {value}%，需立即跟进"

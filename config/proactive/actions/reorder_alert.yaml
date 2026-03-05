@@ -1,6 +1,8 @@
 id: reorder_alert
 name: 库存补货预警
 description: 当库存低于安全线时，自动生成补货建议。
+type: threshold
+enabled: true
 
 prompt_template: |
   今天是 {{CURRENT_DATE}}，系统检测到库存低于安全线。

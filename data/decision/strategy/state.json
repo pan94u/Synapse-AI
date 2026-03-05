@@ -91,7 +91,38 @@
           "status": "off_track"
         }
       ]
+    },
+    {
+      "id": "obj-investment",
+      "name": "投资管理卓越",
+      "target": "管线规模≥5亿，组合IRR≥15%，催缴完成率≥90%",
+      "keyResults": [
+        {
+          "id": "kr-pipeline-value",
+          "name": "投资管线总值达到5亿元",
+          "metricId": "deal_pipeline_value",
+          "targetValue": 50000,
+          "currentValue": 0,
+          "status": "off_track"
+        },
+        {
+          "id": "kr-portfolio-irr",
+          "name": "组合IRR达到15%",
+          "metricId": "portfolio_irr",
+          "targetValue": 15,
+          "currentValue": 0,
+          "status": "off_track"
+        },
+        {
+          "id": "kr-capital-call",
+          "name": "催缴完成率达到90%",
+          "metricId": "capital_call_completion",
+          "targetValue": 90,
+          "currentValue": 0,
+          "status": "off_track"
+        }
+      ]
     }
   ],
-  "lastUpdated": "2026-03-02T01:08:29.643Z"
+  "lastUpdated": "2026-03-05T03:17:37.956Z"
 }
