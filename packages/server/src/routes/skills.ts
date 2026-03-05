@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import type { SkillManager } from '@synapse/skill-manager';
+import { parseSkillMd } from '@synapse/skill-manager';
 import type { PersonaRegistry } from '@synapse/personas';
-import type { SkillCategory, SkillSource } from '@synapse/shared';
+import type { SkillCategory, SkillSource, SkillParameter } from '@synapse/shared';
 
 export function createSkillRoutes(skillManager: SkillManager, personaRegistry: PersonaRegistry): Hono {
   const routes = new Hono();
@@ -99,6 +100,75 @@ export function createSkillRoutes(skillManager: SkillManager, personaRegistry: P
     }
 
     return c.json({ skillId, status: body.status });
+  });
+
+  // POST /api/skills/import — 从 SKILL.md 内容导入创建技能
+  routes.post('/skills/import', async (c) => {
+    const { content } = await c.req.json<{ content: string }>();
+
+    if (!content || typeof content !== 'string' || !content.trim()) {
+      return c.json({ error: 'content is required (SKILL.md raw text)' }, 400);
+    }
+
+    try {
+      const { frontmatter, body } = parseSkillMd(content);
+
+      const name = frontmatter.name as string | undefined;
+      if (!name) {
+        return c.json({ error: 'SKILL.md frontmatter must contain a "name" field' }, 400);
+      }
+
+      const description = (frontmatter.description as string) ?? '';
+      const category = (frontmatter.category as SkillCategory) ?? 'custom';
+
+      // Parse allowed-tools
+      let allowedTools: string[] = [];
+      const rawTools = frontmatter['allowed-tools'] ?? frontmatter.allowedTools;
+      if (Array.isArray(rawTools)) {
+        allowedTools = rawTools.map(String);
+      } else if (typeof rawTools === 'string') {
+        allowedTools = rawTools.split(/\s+/).filter(Boolean);
+      }
+
+      // Parse parameters
+      let parameters: SkillParameter[] = [];
+      const rawParams = frontmatter.parameters;
+      if (Array.isArray(rawParams)) {
+        parameters = rawParams.map((p: Record<string, unknown>) => ({
+          name: String(p.name ?? ''),
+          type: (p.type as SkillParameter['type']) ?? 'string',
+          description: String(p.description ?? ''),
+          required: Boolean(p.required ?? false),
+          default: p.default as string | number | boolean | undefined,
+          options: Array.isArray(p.options) ? p.options.map(String) : undefined,
+        }));
+      }
+
+      // Parse metadata
+      let metadata: Record<string, string> | undefined;
+      const rawMeta = frontmatter.metadata;
+      if (rawMeta && typeof rawMeta === 'object') {
+        metadata = {};
+        for (const [k, v] of Object.entries(rawMeta as Record<string, unknown>)) {
+          metadata[k] = String(v);
+        }
+      }
+
+      const skill = skillManager.createCustomSkill({
+        name,
+        description,
+        category,
+        allowedTools,
+        parameters,
+        instructions: body,
+        metadata,
+      });
+
+      return c.json({ skill }, 201);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return c.json({ error: message }, 400);
+    }
   });
 
   // POST /api/skills/custom — 创建自定义技能

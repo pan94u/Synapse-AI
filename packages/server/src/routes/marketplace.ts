@@ -1,7 +1,9 @@
 import { Hono } from 'hono';
 import type { SkillMarketplace } from '@synapse/skill-marketplace';
+import { publishReview } from '@synapse/skill-marketplace';
+import type { SkillManager } from '@synapse/skill-manager';
 
-export function createMarketplaceRoutes(marketplace: SkillMarketplace): Hono {
+export function createMarketplaceRoutes(marketplace: SkillMarketplace, skillManager?: SkillManager): Hono {
   const routes = new Hono();
 
   // 1. GET /api/marketplace/status — 市场统计
@@ -96,7 +98,28 @@ export function createMarketplaceRoutes(marketplace: SkillMarketplace): Hono {
     return c.json({ skill, reviews });
   });
 
-  // 9. POST /api/marketplace/publish — 发布技能（含自动审核）
+  // 9. POST /api/marketplace/preview — 预览审核评分（不实际发布）
+  routes.post('/marketplace/preview', async (c) => {
+    const { skillId } = await c.req.json<{ skillId: string }>();
+
+    if (!skillId) {
+      return c.json({ error: 'skillId is required' }, 400);
+    }
+
+    if (!skillManager) {
+      return c.json({ error: 'SkillManager not available' }, 500);
+    }
+
+    const skillDef = skillManager.getSkill(skillId);
+    if (!skillDef) {
+      return c.json({ error: `Skill "${skillId}" not found` }, 404);
+    }
+
+    const review = publishReview(skillDef);
+    return c.json({ review });
+  });
+
+  // 10. POST /api/marketplace/publish — 发布技能（含自动审核）
   routes.post('/marketplace/publish', async (c) => {
     const body = await c.req.json();
 

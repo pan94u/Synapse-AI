@@ -442,7 +442,7 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
       marketplaceAdapter,
     );
 
-    app.route('/api', createMarketplaceRoutes(marketplace));
+    app.route('/api', createMarketplaceRoutes(marketplace, skillManager));
     console.log('[server] Skill Marketplace initialized');
   } catch (err) {
     console.warn('[server] Failed to initialize Skill Manager:', err);

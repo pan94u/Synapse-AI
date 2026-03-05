@@ -1,11 +1,16 @@
 'use client';
 
+import { useState } from 'react';
 import { zh } from '@/messages/zh';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { PublishWizard } from './publish-wizard';
 
 const t = zh.marketplace.guide;
+const lc = zh.marketplace.lifecycle;
+const qp = zh.marketplace.quickPublish;
 
 interface CheckItem {
   label: string;
@@ -30,9 +35,102 @@ function ChecklistSection({ title, items }: { title: string; items: CheckItem[] 
   );
 }
 
+function LifecycleNode({
+  label,
+  variant,
+}: {
+  label: string;
+  variant: 'default' | 'secondary' | 'destructive' | 'outline';
+}) {
+  return (
+    <div className="flex items-center justify-center">
+      <Badge variant={variant} className="px-3 py-1.5 text-xs font-medium">
+        {label}
+      </Badge>
+    </div>
+  );
+}
+
+function LifecycleArrow({ label, className }: { label: string; className?: string }) {
+  return (
+    <div className={`flex flex-col items-center gap-0.5 ${className ?? ''}`}>
+      <span className="text-[10px] text-muted-foreground whitespace-nowrap">{label}</span>
+      <div className="text-muted-foreground text-xs">→</div>
+    </div>
+  );
+}
+
+function LifecycleChart() {
+  return (
+    <div className="space-y-6">
+      {/* Row 1: publish → active (auto approve path) */}
+      <div className="flex items-center justify-center gap-3">
+        <LifecycleNode label={lc.publish} variant="secondary" />
+        <LifecycleArrow label={lc.autoApprove} />
+        <LifecycleNode label={lc.active} variant="default" />
+        <LifecycleArrow label={lc.qualityFail} />
+        <LifecycleNode label={lc.suspended} variant="destructive" />
+      </div>
+
+      {/* Row 2: publish → pending → approve/reject paths */}
+      <div className="flex items-center justify-center gap-3">
+        <LifecycleNode label={lc.publish} variant="secondary" />
+        <LifecycleArrow label={lc.manualReview} />
+        <LifecycleNode label={lc.pendingReview} variant="secondary" />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <LifecycleArrow label={lc.approve} />
+            <LifecycleNode label={lc.active} variant="default" />
+          </div>
+          <div className="flex items-center gap-2">
+            <LifecycleArrow label={lc.reject} />
+            <LifecycleNode label={lc.rejected} variant="outline" />
+          </div>
+        </div>
+      </div>
+
+      {/* Row 3: Recovery paths */}
+      <div className="flex items-center justify-center gap-3">
+        <LifecycleNode label={lc.rejected} variant="outline" />
+        <LifecycleArrow label={lc.reactivate} />
+        <LifecycleNode label={lc.active} variant="default" />
+        <LifecycleArrow label={lc.zeroDownloads} />
+        <LifecycleNode label={lc.deprecated} variant="outline" />
+      </div>
+    </div>
+  );
+}
+
 export function SubmissionGuide() {
+  const [wizardOpen, setWizardOpen] = useState(false);
+
   return (
     <div className="space-y-6 mt-4">
+      {/* Skill 生命周期 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{lc.title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <LifecycleChart />
+        </CardContent>
+      </Card>
+
+      {/* 快速发布入口 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{qp.title}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">{qp.description}</p>
+          <Button size="lg" className="w-full" onClick={() => setWizardOpen(true)}>
+            {qp.button}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <PublishWizard open={wizardOpen} onOpenChange={setWizardOpen} />
+
       {/* 概述 */}
       <Card>
         <CardHeader>
