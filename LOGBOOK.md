@@ -1350,3 +1350,365 @@ data/decision/strategy/state.json                    # 策略状态
   │     └── @synapse/server (shared, agent-core, mcp-hub, personas, compliance, memory, proactive, decision-engine, skill-manager, skill-marketplace, hono)
   └── @synapse/mcp-servers (@modelcontextprotocol/sdk, zod)  ← 独立进程
 ```
+
+---
+
+## Session 10 — Phase 10: Web UI 全部前端功能
+
+**日期**: 2026-03-04
+
+### Plan（目标）
+
+补齐 Synapse AI 前端全部 8 个功能页面（MCP、Skills、Compliance、Memory、Proactive、Decision、Marketplace、Settings），使侧边栏所有入口可用。
+
+### Do（实施）
+
+1. **基础设施准备**
+   - `lib/constants.ts`: 移除 8 个导航项的 `disabled: true`
+   - 新增 7 个 shadcn/ui 组件: tabs, table, dialog, input, label, select, switch
+   - `messages/zh.ts`: 扩展 i18n 词条 (~300 条)，覆盖 8 个新页面
+   - `package.json`: 添加 @radix-ui/react-tabs, -label, -select, -switch + @types/node
+
+2. **MCP 连接页** (`/mcp`)
+   - McpPanel (tabs: 服务器/工具/审计日志)
+   - ServerList: 服务器状态 + 重启按钮
+   - ToolList: 聚合工具列表 + 权限徽标
+   - AuditLog: 审计日志表格
+
+3. **Skill 管理页** (`/skills`)
+   - SkillPanel (tabs: 全部/历史)
+   - SkillList + SkillCard: 卡片网格 + 分类筛选 + Switch 启禁
+   - SkillDetailDialog: 参数填写 + 执行
+   - CreateSkillDialog: 自定义 Skill 创建
+   - SkillHistory: 执行历史表格
+
+4. **合规审计页** (`/compliance`)
+   - CompliancePanel (tabs: 规则/审计/审批)
+   - RuleList: Collapsible 展开规则集 + 严重度徽标
+   - AuditTrail: 审计日志表格 (passed/blocked/flagged)
+   - ApprovalList: 审批列表 + 批准/拒绝按钮
+
+5. **记忆系统页** (`/memory`)
+   - MemoryPanel (tabs: 个人/组织/知识库)
+   - PersonalMemory: 角色选择 (Select) + 事实 CRUD
+   - OrgMemory: 搜索 + 分类筛选 + 卡片列表 + OrgMemoryDialog (新建/编辑)
+   - KnowledgeBase: 文档表格 + ImportKnowledgeDialog
+
+6. **主动智能页** (`/proactive`)
+   - ProactivePanel (tabs: 概览/动作/通知/历史)
+   - SchedulerStatus: 4 个状态卡片
+   - ActionList: 动作表格 + 手动执行按钮
+   - NotificationList: 通知卡片 + 标记已读
+   - ExecutionHistory: 执行历史表格
+
+7. **决策智能页** (`/decision`) — 最复杂，5 个 tabs
+   - DecisionPanel (tabs: 指标/洞察/战略/日志/报告)
+   - MetricsView: 指标卡片网格 + 趋势图标
+   - InsightsView: 洞察卡片 + 类型筛选 + 触发分析
+   - StrategyView: 战略目标 + 进度条 + 状态徽标
+   - JournalView + JournalDialog: 决策日志 CRUD + 详情查看
+   - ReportsView: 报告表格 + 生成按钮
+
+8. **Skill 市场页** (`/marketplace`)
+   - MarketplacePanel (MarketplaceStats + tabs: 浏览/已安装)
+   - MarketplaceStats: 4 个统计卡片
+   - SkillBrowser + MarketplaceCard: 搜索 + 分类浏览 + 安装
+   - SkillDetailDialog: 详情 + 评论列表
+   - InstalledList: 已安装表格 + 卸载/更新
+   - ReviewDialog: 星级评分 + 评价提交
+
+9. **系统设置页** (`/settings`)
+   - SettingsPanel: 系统信息 + Skill 状态 + 服务状态 (Promise.allSettled 并行获取 3 个 API)
+
+### Check（验证）
+
+| 测试项 | 结果 |
+|--------|------|
+| TypeScript `tsc --noEmit` | ✅ 零错误 |
+| `bun run build` (Next.js) | ✅ Compiled successfully，14 路由全生成 |
+| Docker build (`docker compose build synapse-web`) | ✅ 镜像构建成功 |
+| Docker run (`docker compose up -d synapse-web`) | ✅ 容器运行在 19300 端口 |
+| 所有页面路由可访问 | ✅ 10/10 页面正常渲染 |
+| 侧边栏全部入口启用 | ✅ 10/10 导航项可点击 |
+
+### Act（经验沉淀）
+
+- **批量创建模式**: 8 个页面 ~58 个文件，按复杂度递增实施（MCP 最简 → Decision 最复杂），每个页面作为独立单元
+- **shadcn/ui 模式**: 标准 new-york style 组件直接手写，无需 `npx shadcn-ui@latest add`，只需 Radix UI 依赖 + cn() 工具
+- **数据获取不过度设计**: `useState + useEffect + apiFetch` 足以支撑所有页面，无需引入 SWR/React Query
+- **Tailwind v4**: `@import "tailwindcss"` 替代 v3 的 `@tailwind base/components/utilities`，`@theme inline` 替代 `theme.extend`
+- **bun install 锁文件迁移**: pnpm-lock.yaml → bun.lock 迁移非常慢 (~3-5 分钟)，但 node_modules 内依赖已存在时可跳过安装直接构建
+- **Next.js 15 standalone**: `output: 'standalone'` 模式下 Docker 仅需复制 `.next/standalone` + `.next/static`
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 新建文件 | ~55 (8 page.tsx + ~40 组件 + 7 shadcn/ui) |
+| 修改文件 | 3 (constants.ts, zh.ts, package.json) |
+| 代码行数 (净增) | ~3500 |
+| 新增页面 | 8 |
+| 新增 shadcn/ui 组件 | 7 (tabs, table, dialog, input, label, select, switch) |
+| i18n 词条增加 | ~250 条 |
+| Total Bundle (First Load JS shared) | 102 kB |
+| 类型检查 | 零错误 |
+| Docker 构建 | 成功 (62s 编译 + 92s 总构建) |
+
+---
+
+## Session 11 — 全 Phase 设计基线审计
+
+**日期**: 2026-03-04
+
+### Plan（目标）
+
+对 DESIGN-BASELINE.md 进行全 Phase (1-10) 交叉审计，修复所有过时/缺失/不一致的条目，确保文档与代码完全对齐。
+
+### Do（实施）
+
+1. **代码审计** — 使用 3 个并行 Agent 扫描全部后端路由、包结构、配置目录
+2. **发现 15+ 处不一致**，逐一修复:
+   - API 端点总数: 80 → **86** (实际 12 路由模块 + health/root)
+   - agent-core 工具数: 8 → **16** (原 8 + skill_execute + 6 browser + browser-wait)
+   - mcp-servers: "database + http-api" → **9 servers** (+ 7 stubs)
+   - config/mcp-servers: "2/15+" → **9/15+** 配置文件
+   - Skills API / Marketplace API: ❌ → **✅** (修复过时标记)
+   - 新增 `@synapse/browser` 包到包表
+   - Phase 9: "📋 待开始" → **✅ 完成** (浏览器自动化 + MCP stubs)
+   - 删除幽灵端点 `GET /decision/insights/:id` (代码中不存在)
+   - 展开聚合端点表示 (org-memory 6 条, memory 6 条, knowledge 5 条, compliance 批准/拒绝分行)
+   - 修复 section 编号: 重复的 3.10/3.11 → 3.13/3.14
+   - 新增 Phase 9 实施总结 (section 九)
+   - 新增 data/browser/screenshots 数据目录
+   - 更新依赖拓扑 (+browser, mcp-servers 9 servers)
+   - 更新 CLAUDE.md (+browser 包, Phase 9 完成, 端点数 86, mcp-servers 9)
+   - 修复 LOGBOOK Session 编号 (重复 Session 9 → Session 10)
+
+### Check（验证）
+
+| 检查项 | 结果 |
+|--------|------|
+| API 端点数与代码匹配 | ✅ 86 endpoints verified |
+| 工具数与 built-in/ 目录匹配 | ✅ 16 tool files |
+| 包表包含全部 14 个包 | ✅ 含 @synapse/browser |
+| Section 编号无重复 | ✅ 3.1-3.14 连续 |
+| Phase 进度与代码一致 | ✅ Phase 9 标记完成 |
+| 幽灵端点已删除 | ✅ insights/:id 已移除 |
+
+### Act（经验沉淀）
+
+- **基线审计时机**: 多 Phase 连续实施后必须做全量审计，否则聚合偏差会越来越大
+- **并行 Agent 审计**: 3 个 Agent 分别扫描路由/包/配置，比串行快 3x
+- **幽灵端点**: 文档中存在但代码中不存在的 API 端点，必须通过 grep 路由文件逐条核实
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 修改文件 | 3 (DESIGN-BASELINE.md, CLAUDE.md, LOGBOOK.md) |
+| 发现不一致项 | 15+ |
+| 修复编辑次数 | ~25 |
+| 新增 DESIGN-BASELINE 行数 | ~40 |
+
+---
+
+## Session 12 — PLAN.md 未落地功能清单
+
+**日期**: 2026-03-04
+
+### Plan（目标）
+
+对比 PLAN.md 全部设计内容 vs 当前代码实现，梳理所有未落地功能，按优先级分类写入 DESIGN-BASELINE.md。
+
+### Do（实施）
+
+1. **逐节审读 PLAN.md** — 全文 ~2277 行，覆盖 12 个核心设计章节 + 10 个 Phase 定义
+2. **逐项交叉核实** — 每个 PLAN.md 功能点与代码实现 (grep/read) 逐条比对
+3. **发现 33 项未落地功能**，按 P0/P1/P2/P3 分级:
+   - P0 (5 项): Auth 中间件、WebSocket 推送、通知渠道、MCP Auth Gateway、审计持久化
+   - P1 (7 项): Planner、多 Agent、向量搜索、决策顾问、MCP Server 填充、MySQL/PG、补偿器
+   - P2 (10 项): 决策仪表盘、日报、Skill 向导/版本、Persona 编辑器、SSE 传输、Resources/Prompts、PDF 报告、记忆增强
+   - P3 (11 项): Ollama、Git/Email/企微/DMS Server、远程 Registry、上报机制、Skill 依赖、BaseMCPServer、Onboarding、浏览器查看器
+4. **写入 DESIGN-BASELINE.md 新增 section 十一** — 含完整功能清单 + 建议 Phase 路线 + 完成度总览
+
+### Check（验证）
+
+| 检查项 | 结果 |
+|--------|------|
+| PLAN.md 12 章节全覆盖 | ✅ |
+| 33 项功能均有代码交叉核实 | ✅ |
+| 每项功能有 PLAN.md 位置引用 | ✅ |
+| 建议 Phase 路线无冲突 | ✅ Phase 8/11/12/13/14+ |
+| 完成度数据与 section 二/三一致 | ✅ ~78% 功能点覆盖 |
+
+### Act（经验沉淀）
+
+- **PLAN.md 是设计锚点**: 即使代码质量很高 (78% 覆盖率)，剩余 22% 的缺失足以影响生产可用性
+- **P0 优先级判定标准**: 重启丢数据、安全漏洞、核心交互缺失 = 必须在上线前解决
+- **Phase 路线规划**: P0 清单应整合为一个 Phase (Phase 11)，不应分散到多个 Phase
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 修改文件 | 2 (DESIGN-BASELINE.md, LOGBOOK.md) |
+| 审读 PLAN.md 行数 | ~2277 |
+| 发现未落地功能 | 33 |
+| 新增 DESIGN-BASELINE 行数 | ~80 |
+| PLAN.md 功能覆盖率 | ~78% (120/153) |
+
+---
+
+## Session 12.5 — Phase 9 集成修复 + MCP 增强 + 配置补全（未提交变更补录）
+
+**日期**: 2026-03-04 ~ 2026-03-05
+**状态**: 未提交（工作区变更）
+
+### Plan（目标）
+
+Phase 9 (浏览器自动化) 和 Phase 10 (Web UI) 完成后的集成修复：浏览器工具接入 Agent、MCP 动态管理、Persona 技能提示优化、Proactive 字段补全、基线文档更新。
+
+### Do（实施）
+
+1. **浏览器工具集成** (`packages/agent-core`, `packages/server`)
+   - 新增 `registerBrowserTools()` 注册 7 个浏览器工具 (navigate, click, fill, screenshot, extract, evaluate, wait)
+   - `BrowserToolDeps` 类型贯穿 agent-core → server → agent routes
+   - `app.ts` 初始化 `BrowserPool`（lazy init），注入到 Agent 创建流程
+   - `index.ts` 增加 `browserPool.shutdown()` 优雅关闭 + `idleTimeout: 120` 支持长时间 SSE
+
+2. **MCP 动态管理** (`packages/mcp-hub`, `packages/server/src/routes/mcp.ts`)
+   - 新增 `hub.addServer()` / `hub.removeServer()` 方法
+   - 新增 `saveServerConfig()` / `deleteServerConfig()` 持久化到磁盘
+   - 新增 `POST /api/mcp/servers` + `DELETE /api/mcp/servers/:id` 端点
+   - MCP tools 列表返回 `server` 字段（从工具名前缀提取 serverId）
+   - `MCPServerStatus` 增加 `name` 字段
+   - `MCPServerCategory` 增加 `'business'` 类型
+
+3. **Persona 技能提示优化** (`packages/personas/src/context.ts`)
+   - `buildSystemPrompt()` 中 defaultSkills 从简单列举改为详细的技能使用规范
+   - 明确优先使用 `skill_execute` 调用预定义技能而非手动调底层工具
+   - 仅在非常具体的查询时才直接调用底层工具
+
+4. **Proactive 字段补全** (`packages/proactive/src/action-loader.ts`)
+   - `RawAction` 增加 `type`、`schedule`、`enabled` 可选字段
+   - 解析时填充默认值 (`type='schedule'`, `enabled=true`)
+
+5. **配置文件补全** (config/ 目录)
+   - 12 个 proactive action YAML 增加 `type`/`schedule`/`enabled` 字段
+   - `ceo.yaml` persona 增加投资相关技能
+   - `metrics.yaml` / `strategy.yaml` 增加投资指标
+   - `proactive/actions/:id/execute` 端点 body 改为可选，默认 `personaId='ceo'`
+
+6. **基线文档更新** (`CLAUDE.md`, `DESIGN-BASELINE.md`)
+   - CLAUDE.md: Phase 9/10 标记完成，项目结构更新（browser 包、MCP 9 配置、Web 前端）
+   - DESIGN-BASELINE.md: 全 Phase 审计 + 33 项未落地功能清单
+
+7. **包管理调整**
+   - `package.json` workspaces 格式化
+   - `server/package.json` 增加 `@synapse/browser` 依赖
+   - 删除 `bun.lock`（切换到 pnpm-lock.yaml）
+
+### Check（验证）
+
+| 检查项 | 结果 |
+|--------|------|
+| Docker 容器启动 | 通过（13 built-in skills, MCP Hub, Browser Pool） |
+| 浏览器工具注册 | 7 tools 注册成功 |
+| MCP 增删 API | POST/DELETE 可用 |
+| Proactive actions 加载 | 字段正确解析 |
+
+### Act（经验沉淀）
+
+- **BrowserPool lazy init**: 浏览器在首次工具调用时才启动，避免无用资源消耗
+- **MCP 工具名约定**: `{serverId}_{toolName}` 前缀格式，用于前端展示 server 归属
+- **Skill 提示工程**: Persona system prompt 需要明确"优先用技能"规范，否则 LLM 倾向于直接调底层工具
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 修改文件 | 37 |
+| 涉及包 | 6 (agent-core, mcp-hub, personas, proactive, server, shared) |
+| 新增 API 端点 | 2 (POST/DELETE /mcp/servers) |
+| 新增方法 | 4 (addServer, removeServer, saveServerConfig, deleteServerConfig) |
+
+---
+
+## Session 13 — Skill 市场上下架规则引擎 + 审核队列 UI
+
+**日期**: 2026-03-05
+**Commit**: `28ba49f` feat: Skill 市场上下架规则引擎 + 审核队列 UI
+
+### Plan（目标）
+
+补完 Skill 市场上下架治理体系：扩展状态机为 5 态、实现发布自动审核规则引擎、改造发布流程、新增人工审核 API、前端审核队列 UI。
+
+### Do（实施）
+
+1. **状态机扩展** (`packages/shared/src/types/marketplace.ts`)
+   - `MarketplaceSkill.status`: 3 态 → 5 态 (`pending_review | active | deprecated | suspended | rejected`)
+   - 新增 `PublishReviewResult`（自动审核结果）、`ReviewDecision`（人工审核决定）接口
+   - `QualityCheckResult.action` 增加 `'deprecated'` 类型
+
+2. **审核规则引擎** (`packages/skill-marketplace/src/review-engine.ts`)
+   - 新增 `publishReview()` 函数 — 4 维度加权评分:
+     - 功能完整性 (30%): instructions 含"任务说明"+"执行步骤"+"输出格式"
+     - 工具合理性 (25%): 1-10 个工具且无高危组合
+     - 安全合规 (25%): 无 shell_exec+file_write 同时存在
+     - 用户体验 (20%): description ≤200 字 + 参数有描述
+   - score ≥ 70 → 自动上架; 30-69 → 待人工审核; < 30 → 拒绝
+   - `qualityCheck()` 增强: 零下载+180 天 → deprecated; 举报 ≥ 3 次 → suspended
+
+3. **发布流程改造** (`packages/skill-marketplace/src/skill-marketplace.ts`)
+   - `publish()` 集成 `publishReview()` 自动审核，返回 `reviewResult`
+   - 新增 `reviewSkill()` — 人工审核 (approve → active, reject → rejected)
+   - 新增 `listPendingReview()` — 获取待审核列表
+   - 新增 `reactivate()` — 从 suspended/deprecated/rejected 重新走审核
+   - `getStats()` 增加 `pendingReview` 计数
+
+4. **后端 API** (`packages/server/src/routes/marketplace.ts`)
+   - `GET /api/marketplace/pending` — 待审核列表
+   - `POST /api/marketplace/skills/:skillId/review` — 审核决定
+   - `POST /api/marketplace/skills/:skillId/reactivate` — 重新上架
+   - `POST /api/marketplace/publish` 返回值包含 `reviewResult`
+
+5. **前端审核队列 UI** (4 文件)
+   - `marketplace-panel.tsx` — tabs 追加"审核队列"
+   - `review-queue.tsx` [NEW] — 审核队列表格 + 驳回弹窗
+   - `marketplace-stats.tsx` — Stats 卡片增加"待审核"（5 列布局）
+   - `zh.ts` — 追加 `reviewQueue` i18n 键值
+
+6. **测试数据 Skill** (`config/skills/discussion-report/SKILL.md`)
+   - 新建"讨论报告生成器" Skill — 将讨论内容整理为结构化报告并生成文件
+   - 工具: memory_read + knowledge_search + file_write
+   - 发布测试: 自动审核 100 分，4 维度全 PASS，直接 active 上架
+
+### Check（验证）
+
+| 测试项 | 结果 |
+|--------|------|
+| `tsc --noEmit` (shared, skill-marketplace, server, web) | 4/4 通过 |
+| `turbo build` (Next.js) | 通过，marketplace 页面 8.66 kB |
+| Docker 重建 (synapse-server + synapse-web) | 成功 |
+| `GET /api/marketplace/pending` | `{"skills":[],"count":0}` |
+| `GET /api/marketplace/status` | 含 `"pendingReview":0` 新字段 |
+| `POST /api/marketplace/publish` (discussion-report) | score=100, status=active, 4 checks 全 PASS |
+| 前端 `http://localhost:19300/marketplace` | 200 OK |
+
+### Act（经验沉淀）
+
+- **Docker volume mount**: `config` 目录是 volume mount 的，新增 Skill 只需重启容器无需重建镜像
+- **Privoxy 代理干扰**: 本地 curl 需加 `--noproxy localhost` 避免 Privoxy 500 错误
+- **发布体验缺陷**: 当前发布只能通过 API 调用，缺少 UI 向导式发布流程和 SKILL.md 上传功能，用户体验不佳 — 下个 Session 需补完
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 新建文件 | 2 (review-queue.tsx, discussion-report/SKILL.md) |
+| 修改文件 | 8 (marketplace.ts types, review-engine, skill-marketplace, routes, panel, stats, zh, index) |
+| 代码行数 (净增) | +1,225 |
+| 新增 API 端点 | 3 (pending, review, reactivate) |
+| 新增方法 | 4 (publishReview, reviewSkill, listPendingReview, reactivate) |
+| Commits | 1 (`28ba49f`) |
+| 类型检查 | 4/4 通过 |

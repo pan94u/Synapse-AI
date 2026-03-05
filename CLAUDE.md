@@ -231,7 +231,7 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 │   ├── shared/          # ✅ 共享类型 (Chat, Tool, Model, MCP)
 │   ├── agent-core/      # ✅ Agent 引擎 (Model Router, Agent, Tools)
 │   ├── mcp-hub/         # ✅ MCP 中心 (Hub, Client, Registry, Health, Audit, RateLimit)
-│   ├── mcp-servers/     # ✅ MCP Server 适配器 (database, http-api)
+│   ├── mcp-servers/     # ✅ MCP Server 适配器 (database, http-api + 7 stubs: bi, crm, erp, feishu, finance, hrm, legal)
 │   ├── personas/        # ✅ 角色画像 (loader, registry, context builder)
 │   ├── compliance/      # ✅ 合规引擎 (pre-hook, post-hook, masker, evaluator)
 │   ├── memory/          # ✅ 记忆系统 (OrgMemory, PersonalMemory, KnowledgeBase)
@@ -239,8 +239,9 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 │   ├── decision-engine/ # ✅ 决策智能 (MetricStore, InsightEngine, StrategyTracker, DecisionJournal)
 │   ├── skill-manager/   # ✅ Skill 系统 (Manager, Registry, Store, Parser, Executor, History)
 │   ├── skill-marketplace/ # ✅ Skill 市场 (Registry, RatingStore, RankingEngine, ReviewEngine, Installer)
-│   ├── server/          # ✅ Hono API 服务端 (chat, agent, mcp, personas, compliance, memory, proactive, decision, skills, marketplace 路由)
-│   └── web/             # 📋 Next.js 前端 (Phase 10)
+│   ├── browser/         # ✅ 浏览器自动化 (BrowserPool + Playwright, 6 browser tools in agent-core)
+│   ├── server/          # ✅ Hono API 服务端 (12 路由模块, 86 端点)
+│   └── web/             # ✅ Next.js 前端 (10 页面, ~40 组件, 19 shadcn/ui)
 ├── data/
 │   ├── org-memory/      # ✅ 组织记忆数据 (policies, decisions, lessons, knowledge)
 │   ├── memory/          # ✅ 个人记忆数据 ({personaId}/facts.json, conversations.json)
@@ -250,7 +251,7 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 │   ├── skill-history/   # ✅ Skill 执行历史 ({id}.json + _index.json)
 │   └── marketplace/     # ✅ Skill 市场数据 (registry/, reviews/, installed.json)
 ├── config/
-│   ├── mcp-servers/     # ✅ MCP Server 配置 (database.json, http-api.json)
+│   ├── mcp-servers/     # ✅ MCP Server 配置 (9 JSON: database, http-api, bi, crm, erp, feishu, finance, hrm, legal)
 │   ├── personas/        # ✅ 7 个角色 YAML (ceo, hr, finance, legal, sales, ops, engineer)
 │   ├── compliance/rules/# ✅ 4 套合规规则 YAML (general, finance, hr, legal)
 │   ├── proactive/       # ✅ 主动智能配置 (actions/*.yaml, monitors/*.yaml)
@@ -291,9 +292,9 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 | Phase 6.5 | 决策智能 (数据→洞察→决策→战略) | ✅ 完成 |
 | Phase 7 | Skill 系统 + 管理器 | ✅ 完成 |
 | Phase 7.5 | Skill Marketplace | ✅ 完成 |
-| Phase 8 | 企业业务系统 MCP Servers | 📋 |
-| Phase 9 | 浏览器自动化 | 📋 |
-| Phase 10 | Web UI | 📋 |
+| Phase 8 | 企业业务系统 MCP Servers (stub 填充) | 📋 |
+| Phase 9 | 浏览器自动化 + MCP Server Stubs | ✅ 完成 |
+| Phase 10 | Web UI (8 功能页面 + ~40 组件) | ✅ 完成 |
 
 ---
 
