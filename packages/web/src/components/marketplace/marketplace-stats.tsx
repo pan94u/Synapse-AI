@@ -7,10 +7,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Stats {
-  total: number;
-  installed: number;
-  topRated: number;
-  totalDownloads: number;
+  totalPublished: number;
+  totalInstalled: number;
+  totalReviews: number;
+  categoryCounts: Record<string, number>;
   pendingReview: number;
 }
 
@@ -22,7 +22,7 @@ export function MarketplaceStats() {
     let cancelled = false;
     async function fetchStats() {
       try {
-        const data = await apiFetch<Stats>('/marketplace/stats');
+        const data = await apiFetch<Stats>('/marketplace/status');
         if (!cancelled) setStats(data);
       } catch {
         // Stats are non-critical, silently fail
@@ -46,12 +46,13 @@ export function MarketplaceStats() {
 
   if (!stats) return null;
 
+  const categoryCount = Object.keys(stats.categoryCounts).length;
   const items = [
-    { title: zh.marketplace.stats.total, value: stats.total },
-    { title: zh.marketplace.stats.installed, value: stats.installed },
-    { title: zh.marketplace.stats.topRated, value: stats.topRated },
-    { title: zh.marketplace.stats.downloads, value: stats.totalDownloads },
+    { title: zh.marketplace.stats.total, value: stats.totalPublished },
+    { title: zh.marketplace.stats.installed, value: stats.totalInstalled },
     { title: zh.marketplace.stats.pendingReview, value: stats.pendingReview },
+    { title: zh.marketplace.stats.topRated, value: stats.totalReviews },
+    { title: zh.marketplace.stats.downloads, value: categoryCount },
   ];
 
   return (

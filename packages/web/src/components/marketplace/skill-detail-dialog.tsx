@@ -39,7 +39,7 @@ export function SkillDetailDialog({ skill, open, onClose, onInstall }: SkillDeta
 
   useEffect(() => {
     if (skill) {
-      apiFetch<{ reviews: Review[] }>(`/marketplace/${skill.id}/reviews`)
+      apiFetch<{ reviews: Review[] }>(`/marketplace/skills/${skill.id}/reviews`)
         .then((data) => setReviews(data.reviews))
         .catch(() => setReviews([]));
     }
@@ -62,7 +62,7 @@ export function SkillDetailDialog({ skill, open, onClose, onInstall }: SkillDeta
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{skill.name}</DialogTitle>
-            <DialogDescription>{skill.author} · v{skill.version}</DialogDescription>
+            <DialogDescription>{skill.author?.name ?? skill.author} · v{skill.version}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -71,7 +71,7 @@ export function SkillDetailDialog({ skill, open, onClose, onInstall }: SkillDeta
             <div className="flex items-center gap-4 text-sm">
               <span className="flex items-center gap-1">
                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                {skill.rating.toFixed(1)}
+                {(typeof skill.rating === 'number' ? skill.rating : skill.rating?.average ?? 0).toFixed(1)}
               </span>
               <span className="flex items-center gap-1">
                 <Download className="h-4 w-4" />
@@ -81,13 +81,9 @@ export function SkillDetailDialog({ skill, open, onClose, onInstall }: SkillDeta
             </div>
 
             <div className="flex gap-2">
-              {skill.installed ? (
-                <Badge variant="secondary">{zh.marketplace.card.installed}</Badge>
-              ) : (
-                <Button size="sm" onClick={handleInstall} disabled={installing}>
-                  {installing ? zh.marketplace.card.installing : zh.marketplace.card.install}
-                </Button>
-              )}
+              <Button size="sm" onClick={handleInstall} disabled={installing}>
+                {installing ? zh.marketplace.card.installing : zh.marketplace.card.install}
+              </Button>
               <Button variant="outline" size="sm" onClick={() => setShowReview(true)}>
                 {zh.marketplace.detail.writeReview}
               </Button>
@@ -129,7 +125,7 @@ export function SkillDetailDialog({ skill, open, onClose, onInstall }: SkillDeta
         onClose={() => setShowReview(false)}
         onSubmitted={() => {
           setShowReview(false);
-          apiFetch<{ reviews: Review[] }>(`/marketplace/${skill.id}/reviews`)
+          apiFetch<{ reviews: Review[] }>(`/marketplace/skills/${skill.id}/reviews`)
             .then((data) => setReviews(data.reviews))
             .catch(() => {});
         }}

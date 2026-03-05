@@ -34,7 +34,7 @@ export function MarketplaceCard({ skill, onInstall, onClick }: MarketplaceCardPr
           <CardTitle className="text-base">{skill.name}</CardTitle>
           <Badge variant="outline">{skill.category}</Badge>
         </div>
-        <p className="text-xs text-muted-foreground">{skill.author}</p>
+        <p className="text-xs text-muted-foreground">{skill.author?.name ?? skill.author}</p>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{skill.description}</p>
@@ -42,7 +42,7 @@ export function MarketplaceCard({ skill, onInstall, onClick }: MarketplaceCardPr
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-              {skill.rating.toFixed(1)}
+              {(typeof skill.rating === 'number' ? skill.rating : skill.rating?.average ?? 0).toFixed(1)}
             </span>
             <span className="flex items-center gap-1">
               <Download className="h-3.5 w-3.5" />
@@ -50,13 +50,9 @@ export function MarketplaceCard({ skill, onInstall, onClick }: MarketplaceCardPr
             </span>
           </div>
           <div onClick={(e) => e.stopPropagation()}>
-            {skill.installed ? (
-              <Badge variant="secondary">{zh.marketplace.card.installed}</Badge>
-            ) : (
-              <Button size="sm" onClick={handleInstall} disabled={installing}>
-                {installing ? zh.marketplace.card.installing : zh.marketplace.card.install}
-              </Button>
-            )}
+            <Button size="sm" onClick={handleInstall} disabled={installing}>
+              {installing ? zh.marketplace.card.installing : zh.marketplace.card.install}
+            </Button>
           </div>
         </div>
       </CardContent>

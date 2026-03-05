@@ -14,11 +14,13 @@ export interface MarketplaceSkill {
   name: string;
   description: string;
   category: string;
-  author: string;
+  author: { id: string; name: string };
   version: string;
-  rating: number;
+  rating: { average: number; count: number };
   downloads: number;
-  installed: boolean;
+  status: string;
+  tags: string[];
+  publishedAt: string;
 }
 
 export function SkillBrowser() {
@@ -54,7 +56,7 @@ export function SkillBrowser() {
 
   const handleInstall = async (id: string) => {
     try {
-      await apiFetch(`/marketplace/${id}/install`, { method: 'POST' });
+      await apiFetch(`/marketplace/skills/${id}/install`, { method: 'POST' });
       await fetchSkills();
     } catch {}
   };

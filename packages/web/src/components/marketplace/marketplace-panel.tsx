@@ -17,19 +17,19 @@ export function MarketplacePanel() {
   return (
     <div className="space-y-4">
       <MarketplaceStats />
-      <div className="flex items-center justify-end">
-        <Button onClick={() => setWizardOpen(true)}>
-          {zh.marketplace.publish.button}
-        </Button>
-      </div>
       <PublishWizard open={wizardOpen} onOpenChange={setWizardOpen} />
-      <Tabs defaultValue="browse">
-        <TabsList>
-          <TabsTrigger value="browse">{zh.marketplace.tabs.browse}</TabsTrigger>
-          <TabsTrigger value="installed">{zh.marketplace.tabs.installed}</TabsTrigger>
-          <TabsTrigger value="review">{zh.marketplace.tabs.reviewQueue}</TabsTrigger>
-          <TabsTrigger value="guide">{zh.marketplace.guide.tabLabel}</TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="guide">
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="guide">{zh.marketplace.guide.tabLabel}</TabsTrigger>
+            <TabsTrigger value="browse">{zh.marketplace.tabs.browse}</TabsTrigger>
+            <TabsTrigger value="installed">{zh.marketplace.tabs.installed}</TabsTrigger>
+            <TabsTrigger value="review">{zh.marketplace.tabs.reviewQueue}</TabsTrigger>
+          </TabsList>
+          <Button size="sm" onClick={() => setWizardOpen(true)}>
+            {zh.marketplace.publish.button}
+          </Button>
+        </div>
         <TabsContent value="browse">
           <SkillBrowser />
         </TabsContent>

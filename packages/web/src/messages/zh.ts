@@ -425,11 +425,11 @@ export const zh = {
       reviewQueue: '审核队列',
     },
     stats: {
-      total: '总 Skill 数',
+      total: '已发布',
       installed: '已安装',
-      topRated: '最高评分',
-      downloads: '总下载量',
       pendingReview: '待审核',
+      topRated: '总评价',
+      downloads: '分类数',
     },
     browse: {
       search: '搜索 Skill...',

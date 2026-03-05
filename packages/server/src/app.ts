@@ -444,6 +444,27 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
 
     app.route('/api', createMarketplaceRoutes(marketplace, skillManager));
     console.log('[server] Skill Marketplace initialized');
+
+    // Auto-seed: publish all active built-in skills to marketplace if not already present
+    const builtInSkills = skillManager.listSkills({ source: 'built-in' });
+    let seeded = 0;
+    for (const skill of builtInSkills) {
+      if (skill.status !== 'active') continue;
+      try {
+        marketplace.publish({
+          skillId: skill.id,
+          author: { id: 'system', name: 'Synapse AI' },
+          version: skill.metadata?.version ?? '1.0.0',
+          tags: [skill.category],
+        });
+        seeded++;
+      } catch {
+        // Already published or validation failed, skip silently
+      }
+    }
+    if (seeded > 0) {
+      console.log(`[server] Auto-seeded ${seeded} built-in skills to marketplace`);
+    }
   } catch (err) {
     console.warn('[server] Failed to initialize Skill Manager:', err);
   }
