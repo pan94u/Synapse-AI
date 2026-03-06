@@ -92,3 +92,13 @@ export type {
   PublishReviewResult,
   ReviewDecision,
 } from './types/marketplace.js';
+
+export type {
+  MCPListingStatus,
+  MCPServerListing,
+  MCPServerReview,
+  MCPInstallRecord,
+  MCPPublishReviewResult,
+  MCPQualityCheckResult,
+  MCPServerScore,
+} from './types/mcp-marketplace.js';

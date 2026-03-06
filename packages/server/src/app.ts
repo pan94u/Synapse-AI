@@ -23,6 +23,7 @@ import { createProactiveRoutes } from './routes/proactive.js';
 import { createDecisionRoutes } from './routes/decision.js';
 import { createSkillRoutes } from './routes/skills.js';
 import { createMarketplaceRoutes } from './routes/marketplace.js';
+import { createMCPMarketplaceRoutes } from './routes/mcp-marketplace.js';
 
 export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveManager?: ProactiveTaskManager; decisionEngine?: DecisionEngine; skillManager?: SkillManager; browserPool?: BrowserPool }> {
   const app = new Hono();
@@ -467,6 +468,40 @@ export async function createApp(): Promise<{ app: Hono; hub: MCPHub; proactiveMa
     }
   } catch (err) {
     console.warn('[server] Failed to initialize Skill Manager:', err);
+  }
+
+  // Initialize MCP Marketplace
+  try {
+    const { MCPMarketplace } = await import('@synapse/mcp-marketplace');
+
+    const mcpHubAdapter = {
+      getServerMetrics: (id: string) => hub.getServerStatusById(id)?.metrics,
+      getServerStatus: (id: string) => {
+        const s = hub.getServerStatusById(id);
+        return s?.status === 'connected' ? 'active' : s?.status;
+      },
+      addServer: (cfg: import('@synapse/shared').MCPServerConfig) => hub.addServer(cfg),
+      removeServer: (id: string) => hub.removeServer(id),
+      getServerConfig: (id: string) => hub.getServerStatusById(id) ? hub['registry']?.get(id)?.config : undefined,
+      getAllConfigs: () => hub.getServerStatus().map((s) => hub['registry']?.get(s.id)?.config).filter(Boolean) as import('@synapse/shared').MCPServerConfig[],
+    };
+
+    const mcpMarketplace = new MCPMarketplace(
+      {
+        registryDir: resolve(process.cwd(), 'data/mcp-marketplace/registry'),
+        reviewsDir: resolve(process.cwd(), 'data/mcp-marketplace/reviews'),
+        installedRecordPath: resolve(process.cwd(), 'data/mcp-marketplace/installed.json'),
+      },
+      mcpHubAdapter,
+    );
+
+    app.route('/api', createMCPMarketplaceRoutes(mcpMarketplace));
+
+    // Auto-seed built-in MCP servers to marketplace
+    const seededMCP = await mcpMarketplace.seedBuiltInServers();
+    console.log(`[server] MCP Marketplace initialized${seededMCP > 0 ? ` (seeded ${seededMCP} servers)` : ''}`);
+  } catch (err) {
+    console.warn('[server] Failed to initialize MCP Marketplace:', err);
   }
 
   return { app, hub, proactiveManager, decisionEngine, skillManager, browserPool };

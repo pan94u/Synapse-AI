@@ -9,6 +9,7 @@ import {
   Store,
   Cable,
   Settings,
+  LayoutGrid,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -29,6 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'proactive', label: 'sidebar.proactive', icon: Zap, href: '/proactive' },
   { id: 'decision', label: 'sidebar.decision', icon: TrendingUp, href: '/decision' },
   { id: 'marketplace', label: 'sidebar.marketplace', icon: Store, href: '/marketplace' },
+  { id: 'mcp-marketplace', label: 'sidebar.mcpMarketplace', icon: LayoutGrid, href: '/mcp-marketplace' },
   { id: 'mcp', label: 'sidebar.mcp', icon: Cable, href: '/mcp' },
   { id: 'settings', label: 'sidebar.settings', icon: Settings, href: '/settings' },
 ];
