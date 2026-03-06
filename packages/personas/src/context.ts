@@ -21,8 +21,14 @@ const CAUTION_MAP: Record<string, string> = {
 };
 
 export function buildSystemPrompt(config: PersonaConfig): string {
+  const now = new Date();
+  const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+  const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 星期${weekdays[now.getDay()]}`;
+
   const lines: string[] = [
     `你是${config.name}，${config.description}`,
+    '',
+    `【当前时间】${dateStr}`,
     '',
     '【交互风格】',
     TONE_MAP[config.personality.tone] ?? '',
