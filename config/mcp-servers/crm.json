@@ -6,8 +6,8 @@
   "command": "bun",
   "args": ["run", "packages/mcp-servers/src/crm/index.ts"],
   "env": {},
-  "enabled": false,
-  "autoStart": false,
+  "enabled": true,
+  "autoStart": true,
   "healthCheck": {
     "interval": 30000,
     "timeout": 5000,
@@ -18,10 +18,10 @@
     "windowMs": 60000
   },
   "permissions": {
-    "tools": ["crm_*"],
+    "tools": ["crm_search_customers", "crm_get_customer", "crm_list_opportunities", "crm_log_activity"],
     "resources": ["*"],
     "requireApproval": ["crm_log_activity"]
   },
   "tags": ["crm", "customer", "sales", "opportunity"],
-  "category": "business"
+  "category": "crm"
 }

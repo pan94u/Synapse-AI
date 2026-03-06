@@ -6,8 +6,8 @@
   "command": "bun",
   "args": ["run", "packages/mcp-servers/src/hrm/index.ts"],
   "env": {},
-  "enabled": false,
-  "autoStart": false,
+  "enabled": true,
+  "autoStart": true,
   "healthCheck": {
     "interval": 30000,
     "timeout": 5000,
@@ -18,10 +18,10 @@
     "windowMs": 60000
   },
   "permissions": {
-    "tools": ["hrm_*"],
+    "tools": ["hrm_search_employees", "hrm_get_employee", "hrm_get_org_chart", "hrm_query_attendance"],
     "resources": ["*"],
     "requireApproval": []
   },
-  "tags": ["hrm", "employee", "attendance"],
-  "category": "business"
+  "tags": ["hrm", "employee", "attendance", "org"],
+  "category": "hrm"
 }

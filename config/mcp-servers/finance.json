@@ -6,8 +6,8 @@
   "command": "bun",
   "args": ["run", "packages/mcp-servers/src/finance/index.ts"],
   "env": {},
-  "enabled": false,
-  "autoStart": false,
+  "enabled": true,
+  "autoStart": true,
   "healthCheck": {
     "interval": 30000,
     "timeout": 5000,
@@ -18,10 +18,10 @@
     "windowMs": 60000
   },
   "permissions": {
-    "tools": ["finance_*"],
+    "tools": ["finance_query_budget", "finance_list_expenses", "finance_get_revenue", "finance_get_cashflow"],
     "resources": ["*"],
     "requireApproval": []
   },
   "tags": ["finance", "budget", "expense", "revenue"],
-  "category": "business"
+  "category": "finance"
 }

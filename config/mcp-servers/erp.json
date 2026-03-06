@@ -6,8 +6,8 @@
   "command": "bun",
   "args": ["run", "packages/mcp-servers/src/erp/index.ts"],
   "env": {},
-  "enabled": false,
-  "autoStart": false,
+  "enabled": true,
+  "autoStart": true,
   "healthCheck": {
     "interval": 30000,
     "timeout": 5000,
@@ -18,10 +18,10 @@
     "windowMs": 60000
   },
   "permissions": {
-    "tools": ["erp_*"],
+    "tools": ["erp_query_inventory", "erp_list_orders", "erp_get_procurement", "erp_get_production"],
     "resources": ["*"],
     "requireApproval": []
   },
   "tags": ["erp", "inventory", "order", "procurement", "production"],
-  "category": "business"
+  "category": "erp"
 }

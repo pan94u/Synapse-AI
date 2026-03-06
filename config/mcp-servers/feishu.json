@@ -4,10 +4,13 @@
   "description": "飞书协作（消息、日历、审批、文档）",
   "transport": "stdio",
   "command": "bun",
-  "args": ["run", "packages/mcp-servers/src/feishu/index.ts"],
+  "args": [
+    "run",
+    "packages/mcp-servers/src/feishu/index.ts"
+  ],
   "env": {
-    "FEISHU_APP_ID": "${env:FEISHU_APP_ID}",
-    "FEISHU_APP_SECRET": "${env:FEISHU_APP_SECRET}"
+    "FEISHU_APP_ID": "cli_a9232467b7b8dcc8",
+    "FEISHU_APP_SECRET": "6lVfRPUH7nCYiI8wjVqUrewpNZEdOeiZ"
   },
   "enabled": true,
   "autoStart": true,
@@ -21,10 +24,24 @@
     "windowMs": 60000
   },
   "permissions": {
-    "tools": ["feishu_*"],
-    "resources": ["*"],
-    "requireApproval": ["send_message", "create_approval", "create_event"]
+    "tools": [
+      "feishu_*"
+    ],
+    "resources": [
+      "*"
+    ],
+    "requireApproval": [
+      "send_message",
+      "create_approval",
+      "create_event"
+    ]
   },
-  "tags": ["feishu", "message", "calendar", "approval", "docs"],
+  "tags": [
+    "feishu",
+    "message",
+    "calendar",
+    "approval",
+    "docs"
+  ],
   "category": "business"
 }

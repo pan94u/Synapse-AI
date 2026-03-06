@@ -1,7 +1,7 @@
 {
   "id": "http-api",
   "name": "HTTP API Server",
-  "description": "Generic REST API proxy",
+  "description": "Generic REST API proxy — 通用 HTTP 请求代理，支持任意外部接口",
   "transport": "stdio",
   "command": "bun",
   "args": ["run", "packages/mcp-servers/src/http-api/index.ts"],
@@ -10,8 +10,8 @@
     "HTTP_API_AUTH_HEADER": "${env:HTTP_API_AUTH_HEADER}",
     "HTTP_API_AUTH_VALUE": "${env:HTTP_API_AUTH_VALUE}"
   },
-  "enabled": false,
-  "autoStart": false,
+  "enabled": true,
+  "autoStart": true,
   "healthCheck": {
     "interval": 30000,
     "timeout": 5000,
@@ -24,8 +24,8 @@
   "permissions": {
     "tools": ["http_request"],
     "resources": ["*"],
-    "requireApproval": []
+    "requireApproval": ["http_request"]
   },
-  "tags": ["http", "rest", "api"],
+  "tags": ["http", "rest", "api", "proxy"],
   "category": "infrastructure"
 }

@@ -6,8 +6,8 @@
   "command": "bun",
   "args": ["run", "packages/mcp-servers/src/bi/index.ts"],
   "env": {},
-  "enabled": false,
-  "autoStart": false,
+  "enabled": true,
+  "autoStart": true,
   "healthCheck": {
     "interval": 30000,
     "timeout": 5000,
@@ -18,10 +18,10 @@
     "windowMs": 60000
   },
   "permissions": {
-    "tools": ["bi_*"],
+    "tools": ["bi_query_kpi", "bi_get_dashboard", "bi_run_report"],
     "resources": ["*"],
     "requireApproval": []
   },
   "tags": ["bi", "kpi", "dashboard", "report"],
-  "category": "business"
+  "category": "analytics"
 }

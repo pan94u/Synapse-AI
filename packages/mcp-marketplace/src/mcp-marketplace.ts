@@ -121,7 +121,7 @@ export class MCPMarketplace {
       toolNames,
       serverConfig: config,
       // Runtime metrics (default)
-      uptimeRate: status === 'connected' ? 1.0 : 0.0,
+      uptimeRate: (status === 'connected' || status === 'active') ? 1.0 : 0.0,
       avgLatencyMs: 0,
       errorRate: 0,
       totalCalls: 0,
@@ -315,7 +315,8 @@ export class MCPMarketplace {
     const errorRate = totalCalls > 0 ? (totalCalls - successCalls) / totalCalls : 0;
     // Approximate uptimeRate: if server is connected, 1.0; else from ratio
     const hubStatus = this.adapter.getServerStatus(serverId);
-    const uptimeRate = hubStatus === 'connected' ? 1.0 : listing.uptimeRate;
+    // adapter maps hub 'connected' → 'active' (or passes through raw hub status)
+    const uptimeRate = (hubStatus === 'connected' || hubStatus === 'active') ? 1.0 : listing.uptimeRate;
 
     this.registry.updateMetrics(serverId, {
       uptimeRate,

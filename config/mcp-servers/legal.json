@@ -6,8 +6,8 @@
   "command": "bun",
   "args": ["run", "packages/mcp-servers/src/legal/index.ts"],
   "env": {},
-  "enabled": false,
-  "autoStart": false,
+  "enabled": true,
+  "autoStart": true,
   "healthCheck": {
     "interval": 30000,
     "timeout": 5000,
@@ -18,10 +18,10 @@
     "windowMs": 60000
   },
   "permissions": {
-    "tools": ["legal_*"],
+    "tools": ["legal_search_contracts", "legal_get_contract", "legal_check_compliance", "legal_list_approvals"],
     "resources": ["*"],
     "requireApproval": []
   },
   "tags": ["legal", "contract", "compliance", "approval"],
-  "category": "business"
+  "category": "legal"
 }
