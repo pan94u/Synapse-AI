@@ -1,0 +1,28 @@
+{
+  "id": "sales-summary",
+  "name": "sales-summary",
+  "version": "1.0",
+  "author": {
+    "id": "system",
+    "name": "Synapse AI"
+  },
+  "description": "生成销售分析报告，包含业绩、趋势、客户分布等。当用户提到销售分析、销售报告、业绩汇总时使用。",
+  "category": "data",
+  "tags": [
+    "data"
+  ],
+  "downloads": 0,
+  "rating": {
+    "average": 0,
+    "count": 0
+  },
+  "successRate": 1,
+  "publishedAt": "2026-03-05T13:27:33.134Z",
+  "updatedAt": "2026-03-05T13:27:33.134Z",
+  "size": 948,
+  "dependencies": [],
+  "compatibility": "",
+  "status": "active",
+  "checksum": "e169d432fd0fef8b9cc6e23e9ebfe44ca29ab3938f864e67678c0a21a5c66f74",
+  "skillContent": "---\nname: sales-summary\ndescription: 生成销售分析报告，包含业绩、趋势、客户分布等。当用户提到销售分析、销售报告、业绩汇总时使用。\ncategory: data\nstatus: active\nallowed-tools:\n  - database_db_query\n  - database_db_list_tables\n  - memory_read\nparameters:\n  - name: period\n    type: string\n    description: 分析周期 (如 2026-Q1, 2026-02)\n    required: false\n  - name: region\n    type: string\n    description: 区域范围\n    required: false\nmetadata:\n  author: synapse\n  version: 1.0\n---\n\n# 销售分析报告\n\n## 任务说明\n\n生成指定周期和区域的销售分析报告。\n\n## 执行步骤\n\n1. 查询销售数据（订单、金额、客户数）\n2. 计算关键销售指标（成交率、客单价、增长率）\n3. 按产品/区域/客户维度分析\n4. 生成趋势分析和预测\n\n## 输出格式\n\n- 销售指标汇总表\n- 趋势图描述\n- 产品/区域/客户分析\n- 重点关注事项"
+}

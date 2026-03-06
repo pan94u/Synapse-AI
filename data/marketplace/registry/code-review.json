@@ -1,0 +1,28 @@
+{
+  "id": "code-review",
+  "name": "code-review",
+  "version": "1.0",
+  "author": {
+    "id": "system",
+    "name": "Synapse AI"
+  },
+  "description": "代码审查助手，分析代码质量、安全性和最佳实践。当用户提到代码审查、code review、代码检查时使用。",
+  "category": "development",
+  "tags": [
+    "development"
+  ],
+  "downloads": 0,
+  "rating": {
+    "average": 0,
+    "count": 0
+  },
+  "successRate": 1,
+  "publishedAt": "2026-03-05T13:27:33.138Z",
+  "updatedAt": "2026-03-05T13:27:33.138Z",
+  "size": 1292,
+  "dependencies": [],
+  "compatibility": "",
+  "status": "active",
+  "checksum": "f7ad10e0bb4ff8eb1b3ef44e28f04382f81973382930534d23c844f192ccd263",
+  "skillContent": "---\nname: code-review\ndescription: 代码审查助手，分析代码质量、安全性和最佳实践。当用户提到代码审查、code review、代码检查时使用。\ncategory: development\nstatus: active\nallowed-tools:\n  - file_read\n  - file_search\n  - shell_exec\nparameters:\n  - name: file-path\n    type: string\n    description: 要审查的文件或目录路径\n    required: true\n  - name: focus\n    type: select\n    description: 审查重点\n    required: false\n    default: general\n    options:\n    - general\n    - security\n    - performance\n    - style\nmetadata:\n  author: synapse\n  version: 1.0\n---\n\n# 代码审查\n\n## 任务说明\n\n对指定代码文件进行系统化审查，提供改进建议。\n\n## 执行步骤\n\n1. 读取目标文件内容\n2. 分析代码结构和逻辑\n3. 检查安全隐患（注入、XSS、敏感信息泄露等）\n4. 评估代码质量（可读性、可维护性、测试覆盖）\n5. 提出改进建议\n\n## 审查维度\n\n### 安全性\n- SQL 注入\n- XSS 攻击\n- 敏感信息硬编码\n- 权限检查\n\n### 性能\n- N+1 查询\n- 不必要的循环\n- 内存泄漏风险\n\n### 代码质量\n- 命名规范\n- 函数复杂度\n- 错误处理\n- 类型安全\n\n## 输出格式\n\n- 文件概要\n- 发现问题列表（含严重等级）\n- 改进建议\n- 总体评分"
+}

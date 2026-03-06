@@ -1,0 +1,28 @@
+{
+  "id": "investment-analysis",
+  "name": "investment-analysis",
+  "version": "1.0",
+  "author": {
+    "id": "system",
+    "name": "Synapse AI"
+  },
+  "description": "综合投资分析助手，支持管线、组合、LP、风险等多维度投资分析。当用户提到投资分析、投资报告、管线分析、组合分析时使用。",
+  "category": "investment",
+  "tags": [
+    "investment"
+  ],
+  "downloads": 0,
+  "rating": {
+    "average": 0,
+    "count": 0
+  },
+  "successRate": 1,
+  "publishedAt": "2026-03-05T13:27:33.136Z",
+  "updatedAt": "2026-03-05T13:27:33.136Z",
+  "size": 2427,
+  "dependencies": [],
+  "compatibility": "",
+  "status": "active",
+  "checksum": "e0532e3e4793fdfd3b6d7dc52d2a8427f8e2f34a474f5c0322ff997484748889",
+  "skillContent": "---\nname: investment-analysis\ndescription: 综合投资分析助手，支持管线、组合、LP、风险等多维度投资分析。当用户提到投资分析、投资报告、管线分析、组合分析时使用。\ncategory: investment\nstatus: active\nallowed-tools:\n  - invest-platform_invest_dashboard\n  - invest-platform_invest_list_funds\n  - invest-platform_invest_deal_kanban\n  - invest-platform_invest_list_portfolios\n  - invest-platform_invest_portfolio_metrics\n  - invest-platform_invest_revenue_curve\n  - invest-platform_invest_todo_items\n  - memory_read\n  - knowledge_search\nparameters:\n  - name: focus\n    type: select\n    description: 分析重点\n    required: false\n    default: overview\n    options:\n    - overview\n    - pipeline\n    - portfolio\n    - lp\n    - risk\nmetadata:\n  author: synapse\n  version: 1.0\n---\n\n# 综合投资分析\n\n## 任务说明\n\n对投资管理平台的数据进行综合分析，生成结构化投资分析报告。根据 focus 参数选择分析维度。\n\n## 执行步骤\n\n1. 调用 invest_dashboard 获取全局概览数据（AUM、项目数、收益率等）\n2. 根据 focus 参数，调用相应的数据接口：\n   - **overview**: 调用所有关键接口，生成全景报告\n   - **pipeline**: 调用 invest_deal_kanban，分析各阶段项目分布和推进情况\n   - **portfolio**: 调用 invest_list_portfolios + invest_portfolio_metrics，分析组合表现\n   - **lp**: 调用 invest_list_funds + invest_todo_items，分析 LP 出资和催缴情况\n   - **risk**: 调用 invest_todo_items + invest_deal_kanban，识别逾期催缴和停滞项目\n3. 从组织记忆中检索投资策略和政策文件\n4. 综合分析并生成报告\n\n## 输出格式\n\n### 全景概览\n- 关键指标仪表盘（AUM、活跃基金数、在管项目数、综合 IRR）\n- 管线健康度（各阶段项目分布、转化率）\n- 组合快照（总市值、盈亏、Top5 持仓）\n- 催缴与出资（逾期催缴、未来 30 天到期）\n- 待办事项与风险提示\n\n### 管线分析\n- 各阶段项目数量和金额分布\n- 项目推进速度分析\n- 瓶颈阶段识别\n- 转化率计算\n\n### 组合分析\n- 各组合 IRR/MOIC 对比\n- 盈亏分布\n- 行业/地域集中度\n- 退出回顾\n\n### LP 分析\n- LP 类型分布和承诺总额\n- 催缴完成率\n- 分配情况汇总\n\n### 风险分析\n- 逾期催缴清单\n- 停滞项目（>30 天无推进）\n- 集中度风险\n- 估值偏离预警"
+}

@@ -1,0 +1,28 @@
+{
+  "id": "lp-report",
+  "name": "lp-report",
+  "version": "1.0",
+  "author": {
+    "id": "system",
+    "name": "Synapse AI"
+  },
+  "description": "LP 关系与出资报告助手，生成 LP 出资情况和关系管理报告。当用户提到 LP 报告、出资报告、LP 分析、催缴报告时使用。",
+  "category": "investment",
+  "tags": [
+    "investment"
+  ],
+  "downloads": 0,
+  "rating": {
+    "average": 0,
+    "count": 0
+  },
+  "successRate": 1,
+  "publishedAt": "2026-03-05T13:27:33.140Z",
+  "updatedAt": "2026-03-05T13:27:33.140Z",
+  "size": 2006,
+  "dependencies": [],
+  "compatibility": "",
+  "status": "active",
+  "checksum": "16d264679a1fc815031c6d9535cdb6f8296f5257c1f898e8666bdd06e0025a11",
+  "skillContent": "---\nname: lp-report\ndescription: LP 关系与出资报告助手，生成 LP 出资情况和关系管理报告。当用户提到 LP 报告、出资报告、LP 分析、催缴报告时使用。\ncategory: investment\nstatus: active\nallowed-tools:\n  - invest-platform_invest_list_lps\n  - invest-platform_invest_get_lp\n  - invest-platform_invest_list_funds\n  - invest-platform_invest_get_fund\n  - invest-platform_invest_todo_items\n  - memory_read\n  - knowledge_search\nparameters:\n  - name: lp-id\n    type: number\n    description: LP ID（不填则生成全部 LP 汇总）\n    required: false\n  - name: report-type\n    type: select\n    description: 报告类型\n    required: false\n    default: summary\n    options:\n    - summary\n    - capital-calls\n    - distributions\nmetadata:\n  author: synapse\n  version: 1.0\n---\n\n# LP 关系与出资报告\n\n## 任务说明\n\n生成 LP（有限合伙人）相关的出资、催缴和分配报告。支持单个 LP 详情和全部 LP 汇总两种模式。\n\n## 执行步骤\n\n1. 如指定 lp-id，调用 invest_get_lp 获取单个 LP 详情及分配记录\n2. 如未指定 lp-id，调用 invest_list_lps 获取全部 LP 概览\n3. 调用 invest_list_funds 获取基金列表，关联 LP 参投信息\n4. 调用 invest_todo_items 获取催缴相关待办\n5. 从组织记忆中检索 LP 管理政策\n6. 根据 report-type 生成对应报告\n\n## 报告类型\n\n### 汇总报告 (summary)\n- LP 总览（数量、总承诺、总已缴、总分配）\n- LP 类型分布（机构/个人/母基金/政府引导基金）\n- Top LP 排名（按承诺金额）\n- 关系健康度评估\n\n### 催缴报告 (capital-calls)\n- 逾期催缴清单（LP 名称、基金、金额、逾期天数）\n- 本周到期催缴\n- 未来 30 天催缴预告\n- 催缴完成率趋势\n- 跟进建议\n\n### 分配报告 (distributions)\n- 各基金分配汇总\n- LP 分配明细\n- DPI（Distributions to Paid-In）计算\n- 分配时间线\n\n## 输出格式\n\n- 报告摘要\n- 关键数据表格\n- 趋势分析\n- 行动建议"
+}

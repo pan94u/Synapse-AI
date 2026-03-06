@@ -131,5 +131,40 @@
     "status": "success",
     "startedAt": "2026-03-05T02:42:32.665Z",
     "completedAt": "2026-03-05T02:43:58.516Z"
+  },
+  {
+    "id": "c994afa8-b73c-4edf-85aa-c3c9928fd47b",
+    "skillId": "deal-review",
+    "personaId": "investment-manager",
+    "triggerType": "agent_tool",
+    "status": "error",
+    "startedAt": "2026-03-05T06:34:07.785Z"
+  },
+  {
+    "id": "289eed6a-672d-40c9-ae3a-18d9ee614b2a",
+    "skillId": "deal-review",
+    "personaId": "investment-manager",
+    "triggerType": "agent_tool",
+    "status": "success",
+    "startedAt": "2026-03-05T06:34:15.729Z",
+    "completedAt": "2026-03-05T06:35:43.440Z"
+  },
+  {
+    "id": "cc8fc0fe-8995-42c0-b031-cc2890901e1c",
+    "skillId": "investment-analysis",
+    "personaId": "ceo",
+    "triggerType": "agent_tool",
+    "status": "success",
+    "startedAt": "2026-03-05T07:36:38.195Z",
+    "completedAt": "2026-03-05T07:37:38.217Z"
+  },
+  {
+    "id": "bbed4e00-e997-4d5a-b7fd-b3a8c7f49b66",
+    "skillId": "investment-analysis",
+    "personaId": "ceo",
+    "triggerType": "agent_tool",
+    "status": "success",
+    "startedAt": "2026-03-06T02:09:15.122Z",
+    "completedAt": "2026-03-06T02:10:09.711Z"
   }
 ]

@@ -1,0 +1,28 @@
+{
+  "id": "employee-onboarding",
+  "name": "employee-onboarding",
+  "version": "1.0",
+  "author": {
+    "id": "system",
+    "name": "Synapse AI"
+  },
+  "description": "入职流程检查和管理，确保新员工入职流程完整。当用户提到入职、新员工、onboarding 时使用。",
+  "category": "automation",
+  "tags": [
+    "automation"
+  ],
+  "downloads": 0,
+  "rating": {
+    "average": 0,
+    "count": 0
+  },
+  "successRate": 1,
+  "publishedAt": "2026-03-05T13:27:33.136Z",
+  "updatedAt": "2026-03-05T13:27:33.136Z",
+  "size": 1238,
+  "dependencies": [],
+  "compatibility": "",
+  "status": "active",
+  "checksum": "5342c387a9189284247f8a274cce163ece43887772a066134d5506840a56055f",
+  "skillContent": "---\nname: employee-onboarding\ndescription: 入职流程检查和管理，确保新员工入职流程完整。当用户提到入职、新员工、onboarding 时使用。\ncategory: automation\nstatus: active\nallowed-tools:\n  - database_db_query\n  - memory_read\n  - memory_write\nparameters:\n  - name: employee-name\n    type: string\n    description: 新员工姓名\n    required: true\n  - name: department\n    type: string\n    description: 入职部门\n    required: true\n  - name: start-date\n    type: string\n    description: 入职日期 (YYYY-MM-DD)\n    required: false\nmetadata:\n  author: synapse\n  version: 1.0\n---\n\n# 入职流程检查\n\n## 任务说明\n\n检查新员工入职流程的完成状态，生成待办清单。\n\n## 执行步骤\n\n1. 查询该员工的入职记录\n2. 检查必需流程完成状态（合同签署、系统开通、培训安排等）\n3. 生成未完成项目清单\n4. 记录检查结果到组织记忆\n\n## 检查项\n\n- [ ] 劳动合同签署\n- [ ] 社保公积金办理\n- [ ] 工位/设备分配\n- [ ] 系统账号开通\n- [ ] 入职培训安排\n- [ ] 导师/Buddy 指定\n- [ ] 部门介绍会\n\n## 输出格式\n\n- 入职进度概览\n- 已完成项目\n- 待办项目（含负责人和截止日期）\n- 风险提示"
+}

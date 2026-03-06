@@ -18,5 +18,35 @@
     "status": "success",
     "startedAt": "2026-03-04T14:07:03.802Z",
     "completedAt": "2026-03-04T14:07:52.999Z"
+  },
+  {
+    "id": "0edf93c0-afd3-4546-bcd7-b4cfbcebc4ba",
+    "taskId": "investment-manager:daily_investment_summary",
+    "personaId": "investment-manager",
+    "action": "daily_investment_summary",
+    "triggerType": "schedule",
+    "status": "success",
+    "startedAt": "2026-03-05T08:00:13.167Z",
+    "completedAt": "2026-03-05T08:01:02.200Z"
+  },
+  {
+    "id": "8d25272a-d001-4510-9db6-5ec7e03613b3",
+    "taskId": "ops-manager:daily_operations_summary",
+    "personaId": "ops-manager",
+    "action": "daily_operations_summary",
+    "triggerType": "schedule",
+    "status": "success",
+    "startedAt": "2026-03-05T08:00:13.177Z",
+    "completedAt": "2026-03-05T08:00:46.337Z"
+  },
+  {
+    "id": "120020da-0f4b-4ef3-b301-382efeb988c1",
+    "taskId": "finance-controller:daily_financial_summary",
+    "personaId": "finance-controller",
+    "action": "daily_financial_summary",
+    "triggerType": "schedule",
+    "status": "success",
+    "startedAt": "2026-03-05T08:00:13.183Z",
+    "completedAt": "2026-03-05T08:00:47.318Z"
   }
 ]

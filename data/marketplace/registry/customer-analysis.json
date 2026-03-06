@@ -1,0 +1,28 @@
+{
+  "id": "customer-analysis",
+  "name": "customer-analysis",
+  "version": "1.0",
+  "author": {
+    "id": "system",
+    "name": "Synapse AI"
+  },
+  "description": "客户画像与行为分析，支持客户分群和价值评估。当用户提到客户分析、客户画像、用户行为时使用。",
+  "category": "data",
+  "tags": [
+    "data"
+  ],
+  "downloads": 0,
+  "rating": {
+    "average": 0,
+    "count": 0
+  },
+  "successRate": 1,
+  "publishedAt": "2026-03-05T13:27:33.140Z",
+  "updatedAt": "2026-03-05T13:27:33.140Z",
+  "size": 1051,
+  "dependencies": [],
+  "compatibility": "",
+  "status": "active",
+  "checksum": "a5fbd977d7346f2cb0f568dadeb68281203b61fab9fce18771bcb97f7cb4543f",
+  "skillContent": "---\nname: customer-analysis\ndescription: 客户画像与行为分析，支持客户分群和价值评估。当用户提到客户分析、客户画像、用户行为时使用。\ncategory: data\nstatus: active\nallowed-tools:\n  - database_db_query\n  - database_db_list_tables\n  - memory_read\nparameters:\n  - name: customer-id\n    type: string\n    description: 客户 ID（可选，不填则做整体分析）\n    required: false\n  - name: analysis-type\n    type: select\n    description: 分析类型\n    required: false\n    default: overview\n    options:\n    - overview\n    - segmentation\n    - lifetime-value\n    - churn-risk\nmetadata:\n  author: synapse\n  version: 1.0\n---\n\n# 客户分析\n\n## 任务说明\n\n对客户数据进行深入分析，生成客户画像、分群结果或价值评估。\n\n## 执行步骤\n\n1. 查询客户基础数据和交易记录\n2. 根据分析类型执行相应算法\n3. 生成客户画像或分群报告\n4. 提出运营建议\n\n## 输出格式\n\n- 客户概览/画像\n- 分群结果或价值评估\n- 行为趋势\n- 运营建议"
+}

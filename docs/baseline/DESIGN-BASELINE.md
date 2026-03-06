@@ -1,7 +1,7 @@
 # Synapse AI — 设计基线 (Design Baseline)
 
 > 追踪 PLAN.md 设计与代码实现之间的对齐关系。每个 Phase 结束后更新。
-> 最后更新: 2026-03-04 | 全 Phase 审计完成 (Phase 1-10) + PLAN.md 未落地功能清单 (33 项)
+> 最后更新: 2026-03-05 | 全 Phase 审计完成 (Phase 1-10) + Session 13 审核引擎增量更新 + PLAN.md 未落地功能清单 (33 项)
 
 ---
 
@@ -16,7 +16,7 @@
 | ⑤ | 合规引擎 | Pre-Hook + Post-Run Hook 双阶段 | ✅ 已实现 | `packages/compliance/` + `config/compliance/` | Phase 4 完成，14 条规则，4 个规则集 |
 | ⑥ | 主动智能 | 定时任务 + 事件触发 + 阈值监控 | ✅ 已实现 | `packages/proactive/` + `config/proactive/` | Phase 6 完成，5 cron + 6 events + 2 monitors |
 | ⑥.5 | 决策智能 | 数据采集→指标→洞察→决策→战略追踪 | ✅ 已实现 | `packages/decision-engine/` + `config/decision/` | Phase 6.5 完成，6 组件 + 16 API |
-| ⑦ | 能力层 | 技能系统 + 内置工具 + 记忆 + 知识 + 技能市场 | ✅ 已实现 | `packages/skill-manager/` + `packages/skill-marketplace/` + `packages/memory/` | Phase 7+7.5 完成，8 内置技能 + Marketplace (17 API) + 排名+评分+质量管控 |
+| ⑦ | 能力层 | 技能系统 + 内置工具 + 记忆 + 知识 + 技能市场 | ✅ 已实现 | `packages/skill-manager/` + `packages/skill-marketplace/` + `packages/memory/` | Phase 7+7.5 完成，10 内置技能 + Marketplace (20 API) + 排名+评分+质量管控+**上下架审核引擎** |
 | ⑧ | 企业集成层 | MCP Hub (Registry + Aggregator + Router + Auth + Health + Audit + Rate Limit) | ✅ 基础实现 | `packages/mcp-hub/` | Phase 3 完成核心框架。缺: Auth Gateway（凭证加密）、Router（独立路由模块） |
 | ⑨ | 企业数字化系统 | 人财法 CRM ERP 等 MCP Servers | ⚠️ 部分实现 | `packages/mcp-servers/` | 已有: database (SQLite) + http-api (完整) + 7 stub servers (bi, crm, erp, feishu, finance, hrm, legal)。缺: stub 填充实际业务逻辑 |
 
@@ -28,7 +28,7 @@
 
 | 包 | PLAN.md 规划 | 实际实现 | 完整度 |
 |----|-------------|---------|--------|
-| `@synapse/shared` | 全部共享类型 | Chat + Tool + Model + MCP + Persona + Compliance + Memory + Proactive + Decision + Skill + Marketplace 类型 | 100% |
+| `@synapse/shared` | 全部共享类型 | Chat + Tool + Model + MCP + Persona + Compliance + Memory + Proactive + Decision + Skill + Marketplace 类型 (含 PublishReviewResult + ReviewDecision) | 100% |
 | `@synapse/agent-core` | Model Router + Agent + Tools + Skills + Memory | Model Router + Agent + Tools (16 内置: 3 file + shell + web-fetch + 3 memory + knowledge-search + skill-execute + 6 browser) + Compliance Hooks | 75% — 缺 Planner/多 Agent |
 | `@synapse/personas` | 角色画像加载、注册、上下文构建 | YAML loader + PersonaRegistry + buildContext + buildSystemPrompt | 95% — 完整实现 |
 | `@synapse/compliance` | Pre-Hook + Post-Hook + 审计 + 审批 | Engine + PreHook + PostHook + Masker + Evaluator + AuditTrail + ApprovalManager | 90% — 审计内存版，缺持久化 |
@@ -38,9 +38,9 @@
 | `@synapse/mcp-hub` | Hub + Client + Registry + Lifecycle + Aggregator + Health + Audit + Rate Limiter | 全部核心组件 | 80% — 缺 Auth Gateway + 独立 Router |
 | `@synapse/mcp-servers` | 15+ 个 MCP Server | database (SQLite) + http-api + 7 stub servers (bi, crm, erp, feishu, finance, hrm, legal) | 30% — 基础设施层 2/4，业务系统层 7/9 stub |
 | `@synapse/skill-manager` | Skill 系统: 解析+注册+执行+历史 | SkillParser + SkillLoader + SkillRegistry + SkillStore + SkillExecutor + ExecutionHistory + SkillManager | 90% — 缺 Skill 版本管理 |
-| `@synapse/skill-marketplace` | Skill 市场: 发布+搜索+安装+评分+排名+质量管控 | MarketplaceRegistry + RatingStore + RankingEngine + ReviewEngine + SkillInstaller + SkillMarketplace | 85% — 缺远程 registry 联动 |
+| `@synapse/skill-marketplace` | Skill 市场: 发布+搜索+安装+评分+排名+质量管控+**上下架审核** | MarketplaceRegistry + RatingStore + RankingEngine + ReviewEngine (validateForPublish + **publishReview** + qualityCheck) + SkillInstaller + SkillMarketplace | 90% — 缺远程 registry 联动 |
 | `@synapse/browser` | 浏览器自动化 (BrowserPool + Playwright) | BrowserPool (session 管理 + max 5 并发 + 10min 自动清理) | 80% — 缺: 多浏览器支持 |
-| `@synapse/server` | Hono API 全部路由 | chat + agent + mcp + personas + compliance + org-memory + memory + knowledge + proactive + decision + skills + marketplace (12 路由模块, 86 端点) | 75% — 12/14+ 路由模块 |
+| `@synapse/server` | Hono API 全部路由 | chat + agent + mcp + personas + compliance + org-memory + memory + knowledge + proactive + decision + skills + marketplace (12 路由模块, 89 端点) | 75% — 12/14+ 路由模块 |
 
 ### 2.2 Phase 10 新增
 
@@ -173,21 +173,52 @@
 | 执行历史 | `_index.json + {id}.json` | ✅ `execution-history.ts` | 完全匹配 | 与 memory 存储模式一致 |
 | 主编排器 | SkillManager 整合所有组件 | ✅ `skill-manager.ts` | 完全匹配 | — |
 | Agent 集成 | skill_execute 工具 + SkillToolDeps | ✅ agent-core + server 桥接 | 完全匹配 | 延迟绑定闭包 |
-| 内置技能 | config/skills/ 目录 | ✅ 8 个 SKILL.md | 完全匹配 | — |
+| 内置技能 | config/skills/ 目录 | ✅ 10 个 SKILL.md | 完全匹配 | Session 13 新增 discussion-report + quick-summary |
 | Persona 技能 | defaultSkills glob 匹配 | ✅ persona YAML 字段 | 完全匹配 | — |
 
-### 3.10 Skill Marketplace（⑦ 能力层 — Phase 7.5）
+### 3.10 Skill Marketplace（⑦ 能力层 — Phase 7.5 + Session 13 增强）
 
 | 设计项 | PLAN.md 设计 | 实现 | 状态 | 偏差 |
 |--------|-------------|------|------|------|
 | 发布注册表 | `_index.json + {id}.json` | ✅ `marketplace-registry.ts` | 完全匹配 | publish/unpublish/search/setStatus |
 | 评分评价 | 每用户每技能唯一 | ✅ `rating-store.ts` | 完全匹配 | 自动计算平均分 |
 | 排名算法 | downloads(0.3)+rating(0.3)+success(0.2)+recency(0.2) | ✅ `ranking-engine.ts` | 完全匹配 | 90 天半衰期 |
-| 发布审核 | name/description/instructions/category 必填 | ✅ `review-engine.ts` validateForPublish | 完全匹配 | + 安全检查 shell_exec+file_write |
-| 质量管控 | 低评分/高失败率 → suspend | ✅ `review-engine.ts` qualityCheck | 完全匹配 | rating<2.0(≥3)+failRate>50%(≥10) |
+| 发布基础审核 | name/description/instructions/category 必填 | ✅ `review-engine.ts` validateForPublish | 完全匹配 | + 安全检查 shell_exec+file_write |
+| **发布自动评分** | — | ✅ `review-engine.ts` publishReview | **Session 13 新增** | 4 维度 100 分制 (见下表) |
+| **5 态状态机** | 3 态: active/deprecated/suspended | ✅ `MarketplaceSkill.status` | **Session 13 扩展** | 新增 pending_review + rejected |
+| 质量管控 | 低评分/高失败率 → suspend | ✅ `review-engine.ts` qualityCheck | 增强 | + 零下载 180 天→deprecated + 举报≥3→suspended |
+| **人工审核** | — | ✅ `skill-marketplace.ts` reviewSkill | **Session 13 新增** | pending_review → active/rejected |
+| **审核队列** | — | ✅ `skill-marketplace.ts` listPendingReview | **Session 13 新增** | registry.search({ status: 'pending_review' }) |
+| **重新上架** | — | ✅ `skill-marketplace.ts` reactivate | **Session 13 新增** | suspended/deprecated/rejected → 重新审核 |
 | 安装器 | install/uninstall/update + installed.json | ✅ `skill-installer.ts` | 完全匹配 | checkUpdates 版本比对 |
 | 主编排器 | SkillMarketplace + SkillManagerAdapter | ✅ `skill-marketplace.ts` | 完全匹配 | 回调注入避免循环依赖 |
 | 依赖 | skill-marketplace → skill-manager | ⚠️ skill-marketplace → shared | 正向偏差 | 通过 adapter 解耦 |
+
+#### publishReview 自动评分维度
+
+| 维度 | 权重 | 满分条件 | 0 分条件 |
+|------|------|---------|---------|
+| 功能完整性 | 30% | instructions 含"任务说明"+"执行步骤"+"输出格式" | instructions < 50 字 |
+| 工具合理性 | 25% | allowedTools 1-10 个且无高危组合 | 0 个工具或 >15 个 |
+| 安全合规 | 25% | 无 shell_exec+file_write 同时存在 | 仅含 shell_exec 且无描述 |
+| 用户体验 | 20% | description ≤200 字 + parameters 有 description | 无 description |
+
+**评分阈值**: ≥70 自动上架 (active) | 30-69 待人工审核 (pending_review) | <30 拒绝发布
+
+#### 状态流转图
+
+```
+                   ┌─── score ≥ 70 ───→ active
+                   │                      │
+publish() → publishReview() → 30-69 → pending_review → approve → active
+                   │                      │                │
+                   └─── score < 30 ──→ rejected ←── reject ┘
+                                          │
+                                   reactivate() → 重新审核
+                                          ▲
+           qualityCheck() ── 低评分/高失败率 ──→ suspended
+                          ── 零下载 180 天 ──→ deprecated
+```
 
 ### 3.11 Web UI（② 交互体验层 — Phase 10）
 
@@ -218,7 +249,7 @@
 | 记忆系统 | `/memory` | MemoryPanel (tabs: 个人/组织/知识库) + OrgMemoryDialog + ImportDialog | /api/memory/*, /api/org-memory, /api/knowledge | 13.4 kB |
 | 主动智能 | `/proactive` | ProactivePanel (tabs: 概览/动作/通知/历史) + SchedulerStatus cards | GET/POST /api/proactive/* | 3.91 kB |
 | 决策智能 | `/decision` | DecisionPanel (tabs: 指标/洞察/战略/日志/报告) + JournalDialog | /api/decision/* | 6.43 kB |
-| Skill 市场 | `/marketplace` | MarketplacePanel + Stats + SkillBrowser + ReviewDialog + InstalledList | /api/marketplace/* | 6.09 kB |
+| Skill 市场 | `/marketplace` | MarketplacePanel + Stats + SkillBrowser + ReviewDialog + InstalledList + **ReviewQueue** | /api/marketplace/* | 8.66 kB |
 | 系统设置 | `/settings` | SettingsPanel (系统信息 + Skill 状态 + 服务状态) | GET /health, /api/skills/status, /api/mcp/servers | 1.54 kB |
 
 #### 前端架构模式
@@ -357,7 +388,10 @@ src/
 | `GET /api/marketplace/browse` | 浏览 | ✅ | Phase 7.5 |
 | `GET /api/marketplace/top` | 排行榜 | ✅ | Phase 7.5 |
 | `GET /api/marketplace/skills/:id` | 详情+评价 | ✅ | Phase 7.5 |
-| `POST /api/marketplace/publish` | 发布技能 | ✅ | Phase 7.5 |
+| `POST /api/marketplace/publish` | 发布技能 (含自动审核评分) | ✅ | Phase 7.5 + Session 13 增强 |
+| `GET /api/marketplace/pending` | 待审核列表 | ✅ | Session 13 |
+| `POST /api/marketplace/skills/:id/review` | 审核决定 (approve/reject) | ✅ | Session 13 |
+| `POST /api/marketplace/skills/:id/reactivate` | 重新上架 | ✅ | Session 13 |
 | `PUT /api/marketplace/skills/:id` | 更新元数据 | ✅ | Phase 7.5 |
 | `DELETE /api/marketplace/skills/:id` | 下架 | ✅ | Phase 7.5 |
 | `POST /api/marketplace/skills/:id/install` | 安装 | ✅ | Phase 7.5 |
@@ -372,9 +406,9 @@ src/
 | `/api/tasks` | 任务管理 | ❌ | 未来 Phase |
 | `/api/settings` | 系统设置 | ⚠️ 前端组合 | Phase 10 前端通过 /health + /api/skills/status + /api/mcp/servers 组合实现 |
 
-**当前 API 总计**: 86 个后端端点 (12 路由模块 + health/root) + 1 个前端 API 代理路由 (`/api/[...path]` → backend)
+**当前 API 总计**: 89 个后端端点 (12 路由模块 + health/root) + 1 个前端 API 代理路由 (`/api/[...path]` → backend)
 
-**Phase 10 前端 API 代理**: Next.js App Router 的 `app/api/[...path]/route.ts` 将所有 `/api/*` 请求透传至后端 `BACKEND_URL/api/*`，支持 SSE 流式透传。前端 8 个新页面共对接 ~30 个后端 API 端点。
+**Phase 10 前端 API 代理**: Next.js App Router 的 `app/api/[...path]/route.ts` 将所有 `/api/*` 请求透传至后端 `BACKEND_URL/api/*`，支持 SSE 流式透传。前端 8 个新页面共对接 ~33 个后端 API 端点（含 Session 13 审核队列 3 个新端点）。
 
 ---
 
@@ -389,7 +423,7 @@ src/
 | `config/proactive/actions/` | action prompt 模板 | ✅ 11 个 YAML | Phase 6 完成 |
 | `config/proactive/monitors/` | 阈值监控配置 | ✅ 2 个 YAML | Phase 6 完成 |
 | `config/decision/` | metrics/collection/insight-rules/strategy YAML | ✅ metrics.yaml + strategy.yaml | Phase 6.5 完成，10 指标定义 + 4 战略目标 |
-| `config/skills/` | 内置技能 SKILL.md | ✅ 8 个 SKILL.md (8 子目录) | Phase 7 完成 |
+| `config/skills/` | 内置技能 SKILL.md | ✅ 10 个 SKILL.md (10 子目录) | Phase 7 完成，Session 13 新增 discussion-report + quick-summary |
 
 ---
 
@@ -706,9 +740,9 @@ Phase 14+(长期)   → Ollama + 远程 Registry + 上报机制 + Skill 依赖 +
 |------|--------|--------|--------|
 | 九层架构 | 9/9 基础实现 | 9 层 | 100% 覆盖，70% 深度 |
 | Package | 14 个 | 14 个 | 100% |
-| API 端点 | 86 个 | ~100+ | ~85% |
+| API 端点 | 89 个 | ~100+ | ~89% |
 | MCP Servers | 9 个 (2 完整 + 7 stub) | 15+ | ~30% |
 | 内置工具 | 16 个 | 16 个 | 100% |
 | 前端页面 | 10 个 | 10 个 | 100% |
-| 配置文件 | 9 MCP + 7 persona + 4 compliance + 11 proactive + 2 decision + 8 skills = 41 | ~50 | ~82% |
+| 配置文件 | 9 MCP + 7 persona + 4 compliance + 11 proactive + 2 decision + 10 skills = 43 | ~50 | ~86% |
 | **PLAN.md 功能点** | **~120/153** | **~153** | **~78%** |

@@ -1,0 +1,28 @@
+{
+  "id": "system-diagnostics",
+  "name": "system-diagnostics",
+  "version": "1.0",
+  "author": {
+    "id": "system",
+    "name": "Synapse AI"
+  },
+  "description": "系统诊断工具，检查系统状态、性能和健康度。当用户提到系统诊断、系统检查、性能分析时使用。",
+  "category": "system",
+  "tags": [
+    "system"
+  ],
+  "downloads": 0,
+  "rating": {
+    "average": 0,
+    "count": 0
+  },
+  "successRate": 1,
+  "publishedAt": "2026-03-05T13:27:33.137Z",
+  "updatedAt": "2026-03-05T13:27:33.137Z",
+  "size": 1110,
+  "dependencies": [],
+  "compatibility": "",
+  "status": "active",
+  "checksum": "99056b531d258633aa17d91b0fc9fbb8b2d4a2135749f7be14d5b9cdfca20639",
+  "skillContent": "---\nname: system-diagnostics\ndescription: 系统诊断工具，检查系统状态、性能和健康度。当用户提到系统诊断、系统检查、性能分析时使用。\ncategory: system\nstatus: active\nallowed-tools:\n  - shell_exec\n  - database_db_query\n  - web_fetch\nparameters:\n  - name: check-type\n    type: select\n    description: 检查类型\n    required: false\n    default: full\n    options:\n    - full\n    - database\n    - api\n    - disk\n    - memory\nmetadata:\n  author: synapse\n  version: 1.0\n---\n\n# 系统诊断\n\n## 任务说明\n\n执行系统健康检查，生成诊断报告。\n\n## 执行步骤\n\n1. 根据检查类型确定检查项\n2. 执行系统命令获取状态信息\n3. 查询数据库连接和性能指标\n4. 检查 API 服务可用性\n5. 汇总诊断结果\n\n## 检查项\n\n### 系统资源\n- CPU 使用率\n- 内存使用率\n- 磁盘空间\n\n### 数据库\n- 连接状态\n- 慢查询统计\n- 表空间使用\n\n### API 服务\n- 响应时间\n- 错误率\n- 可用性\n\n## 输出格式\n\n- 系统状态概览（健康/警告/异常）\n- 各检查项详细结果\n- 异常项目说明\n- 优化建议"
+}

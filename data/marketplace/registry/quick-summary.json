@@ -1,0 +1,28 @@
+{
+  "id": "quick-summary",
+  "name": "quick-summary",
+  "version": "0.1",
+  "author": {
+    "id": "system",
+    "name": "Synapse AI"
+  },
+  "description": "快速生成内容摘要",
+  "category": "writing",
+  "tags": [
+    "writing"
+  ],
+  "downloads": 0,
+  "rating": {
+    "average": 0,
+    "count": 0
+  },
+  "successRate": 1,
+  "publishedAt": "2026-03-05T13:27:33.141Z",
+  "updatedAt": "2026-03-05T13:27:33.141Z",
+  "size": 452,
+  "dependencies": [],
+  "compatibility": "",
+  "status": "active",
+  "checksum": "b4f6238839889ea79de189f872d01f990ce40302dc73940a3575c3edb2ba914b",
+  "skillContent": "---\nname: quick-summary\ndescription: 快速生成内容摘要\ncategory: writing\nstatus: active\nallowed-tools:\n  - memory_read\n  - knowledge_search\nparameters:\n  - name: content\n    type: string\n    description: 需要摘要的内容\n    required: true\nmetadata:\n  author: synapse\n  version: 0.1\n---\n\n# 快速摘要\n\n帮用户快速总结一段内容的要点，生成简洁摘要。\n\n1. 读取用户提供的内容\n2. 提取关键信息\n3. 输出摘要"
+}

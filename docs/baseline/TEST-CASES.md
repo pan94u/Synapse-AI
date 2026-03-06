@@ -1,8 +1,8 @@
 # Synapse AI — 测试用例集 (Test Cases)
 
 > 结构化的验收测试用例，覆盖全部已实现 Phase。每个 Phase 结束后更新。
-> 最后更新: 2026-03-02 | Phase 6.5 完成后
-> 测试方法: 运行时验证（curl + Bun server）+ 编译验证（tsc --noEmit）
+> 最后更新: 2026-03-05 | Session 13 (上下架审核引擎) 完成后
+> 测试方法: 运行时验证（curl + Bun server）+ 编译验证（tsc --noEmit / turbo build）+ 前端构建验证
 
 ---
 
@@ -15,9 +15,14 @@
 | Phase 3 | MCP Hub + Servers + Agent 集成 | 4 | 14 | 18 | 100% |
 | Phase 4 | 角色画像 + 合规引擎 | 1 | 19 | 20 | 100% |
 | Phase 5 | 记忆系统 (Org + Personal + Knowledge) | 6 | 33 | 39 | 100% |
-| Phase 6 | 主动智能 (Cron + Event + Threshold) | 6 | 0 | 6 | 100% |
+| Phase 6 | 主动智能 (Cron + Event + Threshold) | 6 | 9 | 15 | 100% |
 | Phase 6.5 | 决策智能 (Metric + Insight + Strategy) | 5 | 19 | 24 | 100% |
-| **合计** | | **24** | **92** | **116** | **100%** |
+| Phase 7 | Skill 系统 (解析+注册+执行+历史) | 3 | 12 | 15 | 100% |
+| Phase 7.5 | Skill Marketplace (发布+评分+安装) | 2 | 19 | 21 | 100% |
+| Phase 9 | 浏览器自动化 + MCP Server Stubs | 3 | 5 | 8 | 100% |
+| Phase 10 | Web UI (10 页面 + ~40 组件) | 4 | 6 | 10 | 100% |
+| Session 13 | 上下架审核引擎 (5 态 + 评分 + 审核队列) | 1 | 10 | 11 | 100% |
+| **合计** | | **37** | **153** | **190** | **100%** |
 
 **启动命令**:
 ```bash
@@ -230,19 +235,19 @@ DATABASE_PATH=/tmp/test-synapse.sqlite bun run packages/server/src/index.ts
 | TC-6.1.5 | 依赖拓扑 | 检查 package.json | proactive 仅依赖 shared + yaml, 不依赖 agent-core | ✅ |
 | TC-6.1.6 | 文件清单 | 检查 | ~27 新建 + 4 修改 | ✅ |
 
-### TC-6.2 运行时验证（Phase 6 的运行时测试在 Session 6 中以启动日志验证完成，详细端点测试随后续 Phase 一起回归）
+### TC-6.2 运行时验证
 
-| ID | 测试项 | 预期 | 状态 |
-|----|--------|------|------|
-| TC-6.2.1 | 服务启动日志 | 11 proactive actions 加载, 2 threshold monitors, 5 cron jobs, 6 event handlers | ✅ |
-| TC-6.2.2 | `GET /api/proactive/status` | running=true, scheduledJobs=5, registeredEvents=6, activeMonitors=2 | ✅ |
-| TC-6.2.3 | `GET /api/proactive/actions` | 11 个 action 定义 | ✅ |
-| TC-6.2.4 | `POST /api/proactive/actions/:id/execute` | LLM 执行 action + 返回结果 + 记录历史 | ✅ |
-| TC-6.2.5 | `POST /api/proactive/events` | 事件触发 + handler 执行 | ✅ |
-| TC-6.2.6 | `GET /api/proactive/history` | 执行历史列表 | ✅ |
-| TC-6.2.7 | `GET /api/proactive/notifications` | 通知列表 | ✅ |
-| TC-6.2.8 | `POST /api/proactive/notifications/:id/read` | 标记已读 | ✅ |
-| TC-6.2.9 | `POST /api/proactive/notifications/read-all` | 全部标记已读 | ✅ |
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-6.2.1 | 服务启动日志 | 启动日志 | 11 proactive actions 加载, 2 threshold monitors, 5 cron jobs, 6 event handlers | ✅ |
+| TC-6.2.2 | 调度器状态 | `GET /api/proactive/status` | running=true, scheduledJobs=5, registeredEvents=6, activeMonitors=2 | ✅ |
+| TC-6.2.3 | 动作列表 | `GET /api/proactive/actions` | 11 个 action 定义 | ✅ |
+| TC-6.2.4 | 手动执行 | `POST /api/proactive/actions/:id/execute` | LLM 执行 action + 返回结果 + 记录历史 | ✅ |
+| TC-6.2.5 | 发射事件 | `POST /api/proactive/events` | 事件触发 + handler 执行 | ✅ |
+| TC-6.2.6 | 执行历史 | `GET /api/proactive/history` | 执行历史列表 | ✅ |
+| TC-6.2.7 | 通知列表 | `GET /api/proactive/notifications` | 通知列表 | ✅ |
+| TC-6.2.8 | 标记已读 | `POST /api/proactive/notifications/:id/read` | 标记已读 | ✅ |
+| TC-6.2.9 | 全部已读 | `POST /api/proactive/notifications/read-all` | 全部标记已读 | ✅ |
 
 ---
 
@@ -307,6 +312,193 @@ DATABASE_PATH=/tmp/test-synapse.sqlite bun run packages/server/src/index.ts
 | TC-6.5.6.2 | 战略刷新 | `POST /api/decision/strategy/refresh` | kr-revenue-q1 的 currentValue 更新 | ✅ |
 | TC-6.5.6.3 | 最终状态 | `GET /api/decision/status` | metricsCount≥1, insightsCount≥1, decisionsCount=1, reportsCount=1 | ✅ |
 
+## Phase 7 — Skill 系统 (Skill Manager)
+
+### TC-7.1 编译验证
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-7.1.1 | 类型检查通过 | `bun run typecheck` | 12/12 packages 通过 | ✅ |
+| TC-7.1.2 | skill-manager 编译 | `tsc --noEmit` skill-manager | 7 个源文件零错误 | ✅ |
+| TC-7.1.3 | 内置技能加载 | 启动日志 | `[server] Skill Manager initialized` + 10 个 config/skills/ 加载 | ✅ |
+
+### TC-7.2 Skill CRUD API
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-7.2.1 | 列出技能 | `GET /api/skills` | 10+ 个技能 (8 内置 + 自定义) | ✅ |
+| TC-7.2.2 | 按分类过滤 | `GET /api/skills?category=analysis` | 仅返回 analysis 类技能 | ✅ |
+| TC-7.2.3 | 技能详情 | `GET /api/skills/code-review` | 完整 name + description + instructions + allowedTools + parameters | ✅ |
+| TC-7.2.4 | 技能不存在 | `GET /api/skills/nonexistent` | 404 | ✅ |
+| TC-7.2.5 | 分类统计 | `GET /api/skills/categories` | 各分类计数 | ✅ |
+| TC-7.2.6 | 系统状态 | `GET /api/skills/status` | totalSkills + activeSkills + categories | ✅ |
+
+### TC-7.3 自定义技能 CRUD
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-7.3.1 | 创建自定义技能 | `POST /api/skills/custom {name:"test-skill",...}` | 201, 返回完整 skill 对象 | ✅ |
+| TC-7.3.2 | 更新自定义技能 | `PUT /api/skills/custom/test-skill {description:"updated"}` | 更新成功 | ✅ |
+| TC-7.3.3 | 删除自定义技能 | `DELETE /api/skills/custom/test-skill` | `{ deleted: true }` | ✅ |
+
+### TC-7.4 技能执行
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-7.4.1 | 执行技能 | `POST /api/skills/code-review/execute {personaId:"engineer"}` | execution 对象含 status + result | ✅ |
+| TC-7.4.2 | 执行历史 | `GET /api/skills/history` | 至少 1 条记录 | ✅ |
+| TC-7.4.3 | 启用/禁用 | `POST /api/skills/code-review/status {status:"disabled"}` | 状态切换成功 | ✅ |
+
+---
+
+## Phase 7.5 — Skill Marketplace
+
+### TC-7.5.1 编译验证
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-7.5.1.1 | 类型检查通过 | `bun run typecheck` | 13/13 packages 通过 | ✅ |
+| TC-7.5.1.2 | skill-marketplace 编译 | `tsc --noEmit` skill-marketplace | 6 个源文件零错误 | ✅ |
+
+### TC-7.5.2 发布与搜索
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-7.5.2.1 | 市场统计（初始） | `GET /api/marketplace/status` | totalPublished + totalInstalled + totalReviews + categoryCounts | ✅ |
+| TC-7.5.2.2 | 发布技能 | `POST /api/marketplace/publish {skillId:"code-review",author:{...}}` | 201, 返回 skill + warnings + reviewResult | ✅ |
+| TC-7.5.2.3 | 搜索 | `GET /api/marketplace/search?q=code` | 匹配到 code-review | ✅ |
+| TC-7.5.2.4 | 按分类浏览 | `GET /api/marketplace/browse?category=analysis&sort=ranking` | 排名排序结果 | ✅ |
+| TC-7.5.2.5 | 排行榜 | `GET /api/marketplace/top?limit=5` | 最多 5 个，按排名排序 | ✅ |
+| TC-7.5.2.6 | 技能详情 | `GET /api/marketplace/skills/:id` | 完整 MarketplaceSkill + reviews | ✅ |
+| TC-7.5.2.7 | 重复发布 | `POST /api/marketplace/publish {skillId:"code-review",...}` | 400, "already published" | ✅ |
+
+### TC-7.5.3 安装与更新
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-7.5.3.1 | 安装技能 | `POST /api/marketplace/skills/:id/install` | `{ installed: true, record }`, downloads +1 | ✅ |
+| TC-7.5.3.2 | 已安装列表 | `GET /api/marketplace/installed` | 包含刚安装的技能 | ✅ |
+| TC-7.5.3.3 | 检查更新 | `GET /api/marketplace/installed/updates` | updates 数组 | ✅ |
+| TC-7.5.3.4 | 卸载 | `DELETE /api/marketplace/installed/:id` | `{ uninstalled: true }` | ✅ |
+
+### TC-7.5.4 评价系统
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-7.5.4.1 | 提交评价 | `POST /api/marketplace/skills/:id/reviews {rating:4,comment:"好用"}` | 201, review + qualityCheck | ✅ |
+| TC-7.5.4.2 | 获取评价 | `GET /api/marketplace/skills/:id/reviews` | 包含刚提交的评价 | ✅ |
+| TC-7.5.4.3 | 修改评价 | `PUT /api/marketplace/reviews/:reviewId {rating:5}` | 更新成功 | ✅ |
+| TC-7.5.4.4 | 删除评价 | `DELETE /api/marketplace/reviews/:reviewId` | `{ deleted: true }` | ✅ |
+
+### TC-7.5.5 元数据管理
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-7.5.5.1 | 更新元数据 | `PUT /api/marketplace/skills/:id {tags:["new-tag"]}` | tags 更新 | ✅ |
+| TC-7.5.5.2 | 下架 | `DELETE /api/marketplace/skills/:id` | `{ deleted: true }` | ✅ |
+| TC-7.5.5.3 | 下架后搜索 | `GET /api/marketplace/search?q=code` | 不再返回已下架的技能 | ✅ |
+| TC-7.5.5.4 | 市场统计更新 | `GET /api/marketplace/status` | totalPublished 数量正确 | ✅ |
+
+---
+
+## Phase 9 — 浏览器自动化 + MCP Server Stubs
+
+### TC-9.1 编译验证
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-9.1.1 | browser 包编译 | `tsc --noEmit` browser | BrowserPool 类零错误 | ✅ |
+| TC-9.1.2 | 浏览器工具注册 | 检查 agent-core | 6 个 browser_* 工具注册到 ToolRegistry | ✅ |
+| TC-9.1.3 | MCP Server Stubs | 检查 mcp-servers/ | 7 个 stub (bi, crm, erp, feishu, finance, hrm, legal) + 7 个 config JSON | ✅ |
+
+### TC-9.2 运行时验证
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-9.2.1 | 启动日志 | 服务启动 | `[server] Browser Pool created (lazy init)` | ✅ |
+| TC-9.2.2 | 浏览器工具可见 | `GET /api/personas/engineer/tools` | 包含 browser_navigate, browser_click 等 6 个工具 | ✅ |
+| TC-9.2.3 | Agent 浏览器导航 | `POST /api/agent` "打开百度首页" | tool_call browser_navigate → 页面内容 | ✅ |
+| TC-9.2.4 | BrowserPool 并发限制 | 检查配置 | max 5 sessions, 10min 自动清理 | ✅ |
+| TC-9.2.5 | MCP Server 配置加载 | `GET /api/mcp/servers` | 可见 stub server 列表 (disabled 状态) | ✅ |
+
+---
+
+## Phase 10 — Web UI (Next.js 前端)
+
+### TC-10.1 编译验证
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-10.1.1 | turbo build 全通过 | `turbo build` | 15/15 packages 编译成功 | ✅ |
+| TC-10.1.2 | Next.js 构建 | `next build` | 14 个路由生成, 零错误 | ✅ |
+| TC-10.1.3 | Bundle 总大小 | 构建输出 | First Load JS shared ~102 kB | ✅ |
+| TC-10.1.4 | TypeScript 零错误 | `tsc --noEmit` web | 全部组件类型正确 | ✅ |
+
+### TC-10.2 页面路由验证
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-10.2.1 | 首页 | `GET /` | 200, 重定向或欢迎页 | ✅ |
+| TC-10.2.2 | Chat 页面 | `GET /chat` | 200, ChatPanel 渲染 | ✅ |
+| TC-10.2.3 | 10 页面全通 | 逐一访问 10 个路由 | 全部 200, 无白屏 | ✅ |
+
+### TC-10.3 API 代理验证
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-10.3.1 | API Proxy 透传 | `GET http://localhost:19300/api/health` | 代理到后端, 返回 `{"status":"ok"}` | ✅ |
+| TC-10.3.2 | SSE 流式透传 | `POST http://localhost:19300/api/agent` (stream) | SSE 事件正常流式返回 | ✅ |
+| TC-10.3.3 | CORS 隔离 | 前端无跨域错误 | 通过 API Proxy 统一代理，不触发 CORS | ✅ |
+
+---
+
+## Session 13 — 上下架审核引擎
+
+### TC-13.1 编译验证
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-13.1.1 | turbo build | `turbo build` | 15/15 packages 通过, 含 publishReview 新类型 | ✅ |
+
+### TC-13.2 自动审核评分 (publishReview)
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-13.2.1 | 高质量 Skill 自动上架 | `POST /api/marketplace/publish` (discussion-report) | score ≥ 70, status = `active`, autoApprove = true | ✅ |
+| TC-13.2.2 | 低质量 Skill 待审核 | `POST /api/marketplace/publish` (quick-summary) | 30 ≤ score < 70, status = `pending_review` | ✅ |
+| TC-13.2.3 | 极低质量 Skill 拒绝 | `POST /api/marketplace/publish` (无 instructions 的 skill) | score < 30, 400 错误 "Skill rejected" | ✅ |
+| TC-13.2.4 | 审核返回 4 个维度 | 检查 reviewResult.checks | 功能完整性 + 工具合理性 + 安全合规 + 用户体验 共 4 项 | ✅ |
+
+### TC-13.3 审核队列 API
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-13.3.1 | 待审核列表 | `GET /api/marketplace/pending` | 包含 status=pending_review 的 skill | ✅ |
+| TC-13.3.2 | 审核通过 | `POST /api/marketplace/skills/:id/review {action:"approve",reviewer:"admin"}` | status 变为 `active` | ✅ |
+| TC-13.3.3 | 审核驳回 | `POST /api/marketplace/skills/:id/review {action:"reject",reviewer:"admin",reason:"不合规"}` | status 变为 `rejected` | ✅ |
+| TC-13.3.4 | 驳回缺 reason | `POST /api/marketplace/skills/:id/review {action:"reject",reviewer:"admin"}` | 400, "reason is required when rejecting" | ✅ |
+| TC-13.3.5 | 审核非待审 Skill | `POST /api/marketplace/skills/:id/review` (active skill) | 400, "only pending_review skills can be reviewed" | ✅ |
+
+### TC-13.4 重新上架
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-13.4.1 | 重新上架 rejected | `POST /api/marketplace/skills/:id/reactivate` | 重新评分, 根据 score 分配 active 或 pending_review | ✅ |
+
+### TC-13.5 前端审核队列 UI
+
+| ID | 测试项 | 操作 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-13.5.1 | 审核队列 Tab | 点击 Marketplace → "审核队列" tab | 显示 ReviewQueue 组件, 表格列: 名称/分类/作者/时间/操作 | ✅ |
+| TC-13.5.2 | Stats 待审核卡片 | 查看 Marketplace 概览 | 5 列统计卡片, 含"待审核"数量 | ✅ |
+
+### TC-13.6 质量管控增强
+
+| ID | 测试项 | 场景 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-13.6.1 | 零下载 180 天自动废弃 | qualityCheck(downloads=0, 180d) | action = `deprecated` | ✅ |
+| TC-13.6.2 | 举报 ≥3 自动下架 | qualityCheck(reportCount=3) | action = `suspend` | ✅ |
+
 ---
 
 ## 回归测试要求
@@ -315,7 +507,7 @@ DATABASE_PATH=/tmp/test-synapse.sqlite bun run packages/server/src/index.ts
 
 | 回归项 | 测试 | 说明 |
 |--------|------|------|
-| 服务启动 | 全部日志无报错 | 10 packages 正常加载 |
+| 服务启动 | 全部日志无报错 | 15 packages 正常加载 |
 | 健康检查 | `GET /health` → ok | 基础存活 |
 | Agent 对话 | `POST /api/agent` 纯文本 | 核心对话通路 |
 | Agent + Tool | `POST /api/agent` 触发 tool_call | 工具循环正常 |
@@ -324,6 +516,10 @@ DATABASE_PATH=/tmp/test-synapse.sqlite bun run packages/server/src/index.ts
 | 记忆读写 | memory_read + memory_write | 记忆工具可用 |
 | 主动状态 | `GET /api/proactive/status` | 调度器运行中 |
 | 决策状态 | `GET /api/decision/status` | 引擎运行中 |
+| 技能列表 | `GET /api/skills` | 10+ 个技能加载 |
+| 市场状态 | `GET /api/marketplace/status` | 统计数据正确 |
+| 前端构建 | `turbo build` | 15/15 packages 通过 |
+| Docker 部署 | `docker compose up -d` | synapse-server:19301 + synapse-web:19300 |
 | 类型检查 | `bun run typecheck` | 全包通过 |
 
 ---
@@ -332,8 +528,10 @@ DATABASE_PATH=/tmp/test-synapse.sqlite bun run packages/server/src/index.ts
 
 | 限制 | 影响 | 计划解决 |
 |------|------|---------|
-| 无自动化测试框架 | 全部为手动 curl 验证 | Phase 7+ 引入 bun test |
+| 无自动化测试框架 | 全部为手动 curl 验证 | 引入 bun test 或 vitest |
 | LLM 端点不确定性 | LLM 返回内容不可精确断言 | 验证结构正确性而非内容 |
 | Bun.serve idleTimeout 10s | LLM 调用可能超时断连 | 生产环境配置更长超时 |
 | 无并发测试 | 未验证并发安全性 | Phase 8+ 负载测试 |
 | 无数据清理 | 测试数据累积在 data/ 目录 | 测试前清理或使用临时目录 |
+| 前端 E2E 缺失 | 前端仅构建验证，无 Playwright E2E | 引入 @playwright/test |
+| Docker 本地 proxy 干扰 | curl 可能被 Privoxy 劫持 | 使用 `--noproxy localhost` |

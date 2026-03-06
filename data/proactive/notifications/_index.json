@@ -19,5 +19,47 @@
     "severity": "warning",
     "read": false,
     "createdAt": "2026-03-04T23:17:29.250Z"
+  },
+  {
+    "id": "ecd48274-0b1a-40e7-a0bf-6e8ceff758b9",
+    "personaId": "finance-controller",
+    "severity": "warning",
+    "read": false,
+    "createdAt": "2026-03-05T07:32:20.807Z"
+  },
+  {
+    "id": "fb664d7d-14c0-483d-8df2-1471ad4bb308",
+    "personaId": "ops-manager",
+    "severity": "info",
+    "read": false,
+    "createdAt": "2026-03-05T08:00:46.341Z"
+  },
+  {
+    "id": "e22bc813-36b5-40b0-890f-dccebe971b57",
+    "personaId": "finance-controller",
+    "severity": "info",
+    "read": false,
+    "createdAt": "2026-03-05T08:00:47.322Z"
+  },
+  {
+    "id": "5fdfd0ba-e5a5-4217-be83-2cf037266c58",
+    "personaId": "investment-manager",
+    "severity": "info",
+    "read": false,
+    "createdAt": "2026-03-05T08:01:02.203Z"
+  },
+  {
+    "id": "b87496b1-08e6-4f19-bf7e-c39856038325",
+    "personaId": "ops-manager",
+    "severity": "critical",
+    "read": false,
+    "createdAt": "2026-03-05T12:55:35.618Z"
+  },
+  {
+    "id": "293a2422-4c05-4222-9ce9-14a09e05c9c7",
+    "personaId": "ceo",
+    "severity": "critical",
+    "read": false,
+    "createdAt": "2026-03-05T12:55:35.622Z"
   }
 ]

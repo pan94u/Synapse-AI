@@ -256,12 +256,20 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 │   ├── compliance/rules/# ✅ 4 套合规规则 YAML (general, finance, hr, legal)
 │   ├── proactive/       # ✅ 主动智能配置 (actions/*.yaml, monitors/*.yaml)
 │   ├── decision/        # ✅ 决策智能配置 (metrics.yaml, strategy.yaml)
-│   └── skills/          # ✅ 8 个内置 Skill (code-review, data-analysis, monthly-report 等)
-├── PLAN.md              # 总体技术方案
-├── STRATEGY-5Y.md       # 五年战略规划
-├── DISCUSSION-LOG.md    # 讨论演化记录
-├── LOGBOOK.md           # 开发日志 (Session 级)
-├── DESIGN-BASELINE.md   # 设计基线 (Phase 级)
+│   └── skills/          # ✅ 10 个内置 Skill (code-review, data-analysis, monthly-report, discussion-report 等)
+├── docs/
+│   ├── index.md                 # 文档导航
+│   ├── planning/
+│   │   ├── PLAN.md              # 总体技术方案
+│   │   └── STRATEGY-5Y.md       # 五年战略推演
+│   ├── process/
+│   │   ├── LOGBOOK.md           # 开发日志 (Session 级)
+│   │   └── DISCUSSION-LOG.md    # 讨论演化记录
+│   ├── baseline/
+│   │   ├── DESIGN-BASELINE.md   # 设计基线 (Phase 级)
+│   │   └── TEST-CASES.md        # 测试用例集
+│   └── testing/
+│       └── invest-platform-e2e.md # 端到端测试
 └── CLAUDE.md            # 本文件 — 项目级开发规范
 ```
 
