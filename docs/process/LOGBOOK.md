@@ -1871,3 +1871,86 @@ packages/personas/src/context.ts          # buildSystemPrompt 注入当前日期
 | 新增 MCP 工具 | 8 个 (send_message, list_messages, list_calendar, create_event, create_approval, get_approval, read_doc, search_docs) |
 | Commits | 3 (`2736449`, `1696c49`, `b66b552`) |
 | 类型检查 | 通过 |
+
+---
+
+## Session 16 — MCP Marketplace 生态化市场
+
+**日期**: 2026-03-07
+**Commit**: `f6cc351` feat: Phase 8 — MCP Marketplace 生态化市场
+
+### Plan（目标）
+
+参照已有的 Skill Marketplace 构建 MCP Marketplace，让 MCP Server 进入"发布 → 评分 → 排名 → 自动下架"的生态闭环。核心优势：MCPMetrics 提供客观质量量化（uptimeRate / errorRate / avgLatencyMs），比主观评分更有数据支撑。
+
+### Do（实施）
+
+1. **Shared 类型** (`packages/shared/src/types/mcp-marketplace.ts`)
+   - 6 个类型：`MCPServerListing`, `MCPServerReview`, `MCPInstallRecord`, `MCPPublishReviewResult`, `MCPQualityCheckResult`, `MCPServerScore`
+   - `MCPServerListing` 含静态元数据 + 运行时指标 + 市场数据 三段结构
+
+2. **@synapse/mcp-marketplace 包** (新建)
+   - `marketplace-registry.ts`：文件存储 + `_index.json` 加速，支持 8 种操作
+   - `ranking-engine.ts`：纯函数，`score = reliability×0.35 + performance×0.25 + rating×0.25 + recency×0.15`
+   - `review-engine.ts`：发布审核（4 维度 100 分）+ 质量检查（6 个触发条件）
+   - `rating-store.ts`：用户评价存储，同一用户对同一 server 唯一评价
+   - `mcp-marketplace.ts`：主编排器 + `MCPHubAdapter` 接口（避免循环依赖）
+
+3. **Server 路由** (`packages/server/src/routes/mcp-marketplace.ts`)
+   - 16 个端点：status / browse / top / search / pending / publish / servers CRUD + install/review/reviews + installed + sync
+
+4. **app.ts 集成**
+   - `MCPHubAdapter` 桥接，通过 bracket 访问 `hub['registry']` 获取原始 config（不污染 MCPHub 公共 API）
+   - `seedBuiltInServers()` 自动预注册全部 10 个内置 MCP Servers
+
+5. **前端页面** (`/mcp-marketplace`)
+   - `McpMarketplaceStats`：5 个统计卡片（已发布 / 已安装 / 待审核 / 平均可用率 / 总调用数）
+   - `ServerBrowser` + `ServerCard`：卡片展示工具数 / 可用率 / 延迟 / 评分
+   - `ServerDetailDialog`：详情弹窗，含工具列表 + 运行指标 + 评价列表
+   - `McpMarketplacePanel`：3 Tab（浏览 / 已安装 / 审核队列），审核队列内联于 Panel
+
+### Check（文件变更表）
+
+```
+新建文件 (14):
+packages/shared/src/types/mcp-marketplace.ts
+packages/mcp-marketplace/package.json + tsconfig.json
+packages/mcp-marketplace/src/index.ts
+packages/mcp-marketplace/src/marketplace-registry.ts
+packages/mcp-marketplace/src/ranking-engine.ts
+packages/mcp-marketplace/src/review-engine.ts
+packages/mcp-marketplace/src/rating-store.ts
+packages/mcp-marketplace/src/mcp-marketplace.ts
+packages/server/src/routes/mcp-marketplace.ts
+packages/web/src/app/mcp-marketplace/page.tsx
+packages/web/src/components/mcp-marketplace/mcp-marketplace-panel.tsx
+packages/web/src/components/mcp-marketplace/mcp-marketplace-stats.tsx
+packages/web/src/components/mcp-marketplace/server-browser.tsx
+packages/web/src/components/mcp-marketplace/server-card.tsx
+packages/web/src/components/mcp-marketplace/server-detail-dialog.tsx
+
+修改文件 (5):
+packages/shared/src/index.ts          # 导出 7 个 MCP marketplace 类型
+packages/server/src/app.ts            # 集成初始化 + seedBuiltInServers()
+packages/server/package.json          # 新增 @synapse/mcp-marketplace 依赖
+packages/web/src/lib/constants.ts     # NAV_ITEMS 加入 MCP 市场入口
+packages/web/src/messages/zh.ts       # 新增 mcpMarketplace 键组 (~80 行)
+```
+
+### Act（经验沉淀）
+
+- **MCPHubAdapter 接口设计**：`getServerStatus()` 返回 `string | undefined`（而非 `MCPListingStatus`），因为 MCPHub 的状态类型（connected / registered / error 等）与市场状态不同，用宽松类型避免不必要的类型强制转换
+- **模块隔离验证**：通过 `bun install` 链接 workspace 后 tsc 即可通过，无需额外 tsconfig paths 配置（Bun bundler moduleResolution 自动处理）
+- **PendingQueue 内联**：将审核队列组件直接内联在 `mcp-marketplace-panel.tsx` 中，因其与市场整体交互紧密，不需单独文件
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 新建文件 | 15 |
+| 修改文件 | 5 |
+| 代码行数 (净增) | ~1,850 行 |
+| 新增 Package | 1（@synapse/mcp-marketplace） |
+| 新增 API 端点 | 16 个 |
+| Commits | 1 (`f6cc351`) |
+| 类型检查 | 通过（shared / mcp-marketplace / server / web 全部 0 错误） |

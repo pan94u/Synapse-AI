@@ -220,6 +220,8 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 
 - **工具 deps 避免循环依赖**: `agent-core` 的 memory tools 需要 `@synapse/memory` 的 store 类，但不应直接依赖该包。用结构类型接口（`OrgMemoryStoreAdapter` 等）替代 import，由 `server` 层桥接注入
 - **文件系统存储 + 内存索引**: `_index.json` 加速搜索，避免每次遍历全量 JSON 文件。但写操作需同步更新索引，否则数据不一致
+- **Adapter 接口类型宽松化**: 跨层 Adapter（如 MCPHubAdapter）的状态返回类型用 `string | undefined` 而非具体枚举，避免两套状态体系的强制映射。在消费端做具体比较（`=== 'connected'`）即可
+- **新 Package 链接**: 新建 workspace package 后必须 `bun install` 链接符号，否则 tsc 找不到 `@synapse/xxx` 模块（即便 tsconfig 配置正确）
 
 ---
 
@@ -241,7 +243,8 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 │   ├── skill-marketplace/ # ✅ Skill 市场 (Registry, RatingStore, RankingEngine, ReviewEngine, Installer)
 │   ├── browser/         # ✅ 浏览器自动化 (BrowserPool + Playwright, 6 browser tools in agent-core)
 │   ├── server/          # ✅ Hono API 服务端 (12 路由模块, 86 端点)
-│   └── web/             # ✅ Next.js 前端 (10 页面, ~40 组件, 19 shadcn/ui)
+│   ├── mcp-marketplace/ # ✅ MCP 市场 (Registry, RankingEngine, ReviewEngine, RatingStore)
+│   └── web/             # ✅ Next.js 前端 (11 页面, ~45 组件, 19 shadcn/ui)
 ├── data/
 │   ├── org-memory/      # ✅ 组织记忆数据 (policies, decisions, lessons, knowledge)
 │   ├── memory/          # ✅ 个人记忆数据 ({personaId}/facts.json, conversations.json)
@@ -249,7 +252,8 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 │   ├── proactive/       # ✅ 主动智能数据 (history/, notifications/)
 │   ├── decision/        # ✅ 决策智能数据 (metrics/, insights/, journal/, reports/, strategy/)
 │   ├── skill-history/   # ✅ Skill 执行历史 ({id}.json + _index.json)
-│   └── marketplace/     # ✅ Skill 市场数据 (registry/, reviews/, installed.json)
+│   ├── marketplace/     # ✅ Skill 市场数据 (registry/, reviews/, installed.json)
+│   └── mcp-marketplace/ # ✅ MCP 市场数据 (registry/, reviews/, installed.json)
 ├── config/
 │   ├── mcp-servers/     # ✅ MCP Server 配置 (9 JSON: database, http-api, bi, crm, erp, feishu, finance, hrm, legal)
 │   ├── personas/        # ✅ 7 个角色 YAML (ceo, hr, finance, legal, sales, ops, engineer)
@@ -300,7 +304,7 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 | Phase 6.5 | 决策智能 (数据→洞察→决策→战略) | ✅ 完成 |
 | Phase 7 | Skill 系统 + 管理器 | ✅ 完成 |
 | Phase 7.5 | Skill Marketplace | ✅ 完成 |
-| Phase 8 | 企业业务系统 MCP Servers (stub 填充) | 📋 |
+| Phase 8 | MCP Marketplace 生态化市场 | ✅ 完成 |
 | Phase 9 | 浏览器自动化 + MCP Server Stubs | ✅ 完成 |
 | Phase 10 | Web UI (8 功能页面 + ~40 组件) | ✅ 完成 |
 
