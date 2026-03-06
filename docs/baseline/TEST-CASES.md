@@ -501,6 +501,60 @@ DATABASE_PATH=/tmp/test-synapse.sqlite bun run packages/server/src/index.ts
 
 ---
 
+## TC-14 MCP Marketplace
+
+### TC-14.1 启动验证
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-14.1.1 | 市场统计 | `curl --noproxy localhost http://localhost:3001/api/mcp-marketplace/status` | `totalPublished: 10, pendingReview: 0` | ✅ |
+| TC-14.1.2 | 自动预注册 | 启动日志 | `seedBuiltInServers()` 注册 10 个内置服务器 | ✅ |
+
+### TC-14.2 浏览与搜索
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-14.2.1 | 浏览全部 | `GET /api/mcp-marketplace/browse` | 返回 10 个服务器，默认按排名排序 | ✅ |
+| TC-14.2.2 | 按分类过滤 | `GET /api/mcp-marketplace/browse?category=analytics` | 仅返回 bi 服务器 | ✅ |
+| TC-14.2.3 | 关键词搜索 | `GET /api/mcp-marketplace/search?q=crm` | 返回 crm 服务器 | ✅ |
+| TC-14.2.4 | 排行榜 | `GET /api/mcp-marketplace/top?limit=5` | 返回最多 5 个带 score 字段的服务器 | ✅ |
+
+### TC-14.3 发布审核
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-14.3.1 | 内置服务器发布评分 | `GET /api/mcp-marketplace/servers/erp` | `status: "active"`, `reviewResult.score ≥ 70` | ✅ |
+| TC-14.3.2 | 重复发布拒绝 | `POST /api/mcp-marketplace/publish` (已存在 id) | 400, "already published" | ✅ |
+| TC-14.3.3 | 审核待审队列 | `GET /api/mcp-marketplace/pending` | 返回 `status=pending_review` 的条目 | ✅ |
+
+### TC-14.4 指标同步
+
+| ID | 测试项 | 命令 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-14.4.1 | 同步运行指标 | `POST /api/mcp-marketplace/sync/erp` | `uptimeRate: 1.0` (已连接) | ✅ |
+| TC-14.4.2 | 同步未连接服务器 | `POST /api/mcp-marketplace/sync/database` | `uptimeRate: 0.0` (未连接) | ✅ |
+
+### TC-14.5 前端页面
+
+| ID | 测试项 | 操作 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-14.5.1 | 页面加载 | 访问 `/mcp-marketplace` | 显示 McpMarketplaceStats + 5 个统计卡片 | ✅ |
+| TC-14.5.2 | 服务器卡片 | browse tab | 显示 ServerCard：名称/分类/工具数/可用率/延迟/评分 | ✅ |
+| TC-14.5.3 | 详情弹窗 | 点击服务器卡片 | ServerDetailDialog 显示工具列表 badge + 运行指标 | ✅ |
+| TC-14.5.4 | 已安装 Tab | 点击 "已安装" tab | 显示已安装服务器列表（或空状态） | ✅ |
+| TC-14.5.5 | 侧边栏入口 | 侧边栏 | 显示 "MCP 市场" 导航项，点击跳转 `/mcp-marketplace` | ✅ |
+
+### TC-14.6 质量控制
+
+| ID | 测试项 | 场景 | 预期 | 状态 |
+|----|--------|------|------|------|
+| TC-14.6.1 | 高错误率挂起 | qualityCheck(errorRate=0.35, totalCalls=20) | action = `suspend` | ✅ |
+| TC-14.6.2 | 低可用率挂起 | qualityCheck(uptimeRate=0.6, totalCalls=10) | action = `suspend` | ✅ |
+| TC-14.6.3 | 低评分挂起 | qualityCheck(rating.average=1.8, count=3) | action = `suspend` | ✅ |
+| TC-14.6.4 | 90 天废弃 | qualityCheck(totalCalls=0, lastUpdated=90d ago) | action = `deprecated` | ✅ |
+
+---
+
 ## 回归测试要求
 
 每个新 Phase 完成后，需回归验证以下核心路径：
@@ -518,6 +572,7 @@ DATABASE_PATH=/tmp/test-synapse.sqlite bun run packages/server/src/index.ts
 | 决策状态 | `GET /api/decision/status` | 引擎运行中 |
 | 技能列表 | `GET /api/skills` | 10+ 个技能加载 |
 | 市场状态 | `GET /api/marketplace/status` | 统计数据正确 |
+| MCP 市场状态 | `GET /api/mcp-marketplace/status` | totalPublished ≥ 9 |
 | 前端构建 | `turbo build` | 15/15 packages 通过 |
 | Docker 部署 | `docker compose up -d` | synapse-server:19301 + synapse-web:19300 |
 | 类型检查 | `bun run typecheck` | 全包通过 |

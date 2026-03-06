@@ -1954,3 +1954,75 @@ packages/web/src/messages/zh.ts       # 新增 mcpMarketplace 键组 (~80 行)
 | 新增 API 端点 | 16 个 |
 | Commits | 1 (`f6cc351`) |
 | 类型检查 | 通过（shared / mcp-marketplace / server / web 全部 0 错误） |
+
+---
+
+## Session 17 — Stub Server 激活 + Dockerfile 修复 + 文档更新
+
+**日期**: 2026-03-07
+**Commit**: (pending)
+
+### Plan（目标）
+
+将 7 个 stub MCP Server 配置完整化并启用，修复 Dockerfile.server 缺少 mcp-marketplace 包的问题，同步更新 LOGBOOK / DESIGN-BASELINE / TEST-CASES。
+
+### Do（实施）
+
+1. **7 个 Stub Server 配置补全** (`config/mcp-servers/`)
+   - 启用 `enabled: true` + `autoStart: true`（原来全部禁用）
+   - `permissions.tools` 填充具体工具名（从 stub 实现提取），替换原来的通配符 `*`
+   - `requireApproval`：crm 写操作（`crm_log_activity`）+ http-api（`http_request`）
+   - `category` 对齐 MCPServerCategory 类型：analytics / crm / erp / hrm / finance / legal / infrastructure
+   - 结果：9/10 服务器连接成功（`database` 因缺 `DATABASE_PATH` 环境变量预期失败）
+
+2. **Bug 修复：uptimeRate 始终为 0%**
+   - 根因：`syncMetrics()` 检查 `hubStatus === 'connected'`，但 `app.ts` adapter 已将 hub 状态映射为 `'active'`
+   - 修复：改为 `hubStatus === 'connected' || hubStatus === 'active'`
+   - 文件：`packages/mcp-marketplace/src/mcp-marketplace.ts:319`
+
+3. **Dockerfile 双文件修复**
+   - `Dockerfile.server` 缺少 `packages/mcp-marketplace/`：新增两行 COPY（package.json 段 + 源码段）
+   - `Dockerfile.web` 同样缺少：虽然 web 不直接依赖 mcp-marketplace，但 server 的 workspace:* 引用导致 bun install 失败；同样新增 COPY package.json 行
+   - 修复后 `docker compose build` 两个镜像均构建成功；`docker compose up -d` 正常启动
+
+4. **文档更新**
+   - `DESIGN-BASELINE.md`：新增 "十、MCP Marketplace 设计" 完整章节（架构图 / 数据模型 / 排名算法 / 质量检查 / API 端点 / 存储结构 / 前端结构 / 技术决策）；更新完成度总览（Package +1→15，端点 +16→105，页面 +1→11）
+   - `TEST-CASES.md`：新增 TC-14 MCP Marketplace（4 组 15 条测试用例）；回归清单新增 MCP 市场状态检查
+   - `LOGBOOK.md`：本条 Session 17
+
+### Check（文件变更表）
+
+```
+修改文件 (12):
+config/mcp-servers/bi.json        # enabled + autoStart + tools + category
+config/mcp-servers/crm.json       # enabled + autoStart + tools + requireApproval
+config/mcp-servers/erp.json       # enabled + autoStart + tools + category
+config/mcp-servers/finance.json   # enabled + autoStart + tools + category
+config/mcp-servers/hrm.json       # enabled + autoStart + tools + category
+config/mcp-servers/legal.json     # enabled + autoStart + tools + category
+config/mcp-servers/http-api.json  # enabled + autoStart + requireApproval
+packages/mcp-marketplace/src/mcp-marketplace.ts  # syncMetrics uptimeRate 双态 fix
+Dockerfile.server                  # 新增 mcp-marketplace 包复制（package.json + 源码）
+Dockerfile.web                     # 新增 mcp-marketplace/package.json（dep resolution fix）
+docs/baseline/DESIGN-BASELINE.md  # MCP Marketplace 章节 + 完成度更新
+docs/baseline/TEST-CASES.md       # TC-14 + 回归检查项
+docs/process/LOGBOOK.md           # 本 Session 记录
+```
+
+### Act（经验沉淀）
+
+- **Adapter 状态映射一致性**: Hub 返回 `'connected'`，adapter 可能映射为 `'active'`，下游必须兼容两种写法。此类"中间转换层不一致"问题应在集成测试中第一时间发现（建议：编写简单的 `syncMetrics` 集成 smoke test）
+- **Dockerfile 双文件遗漏新包**: 每次新增 workspace package，**Dockerfile.server 和 Dockerfile.web 都需要**同步更新。Web 镜像虽然不直接使用 mcp-marketplace，但 bun 在解析 server 的 workspace:* 依赖时仍需找到 package.json，否则 `bun install` 报错"Workspace dependency not found"。规则：新 Package → 两个 Dockerfile 都加 COPY package.json，Dockerfile.server 还要加源码 COPY
+- **已知限制 — toolCount 在 seed 时为 0**: `seedBuiltInServers()` 在 hub 连接完成前运行，工具名称尚未发现，需调用 `/sync/:id` 后才会填充 toolNames；这是架构约束，非 Bug
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 新建文件 | 0 |
+| 修改文件 | 12 |
+| Bug 修复 | 1（uptimeRate 双态）|
+| Dockerfile 修复 | 2（Dockerfile.server + Dockerfile.web）|
+| 启用 MCP Server | 7（bi/crm/erp/finance/hrm/legal/http-api）|
+| MCP Marketplace 总注册数 | 10 |
+| 新增测试用例 | 15（TC-14）|

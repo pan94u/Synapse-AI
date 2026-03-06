@@ -24,6 +24,7 @@ COPY packages/proactive/package.json packages/proactive/
 COPY packages/decision-engine/package.json packages/decision-engine/
 COPY packages/skill-manager/package.json packages/skill-manager/
 COPY packages/skill-marketplace/package.json packages/skill-marketplace/
+COPY packages/mcp-marketplace/package.json packages/mcp-marketplace/
 COPY packages/browser/package.json packages/browser/
 COPY packages/server/package.json packages/server/
 COPY packages/web/package.json packages/web/

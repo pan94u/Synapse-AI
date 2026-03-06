@@ -629,15 +629,130 @@ Route (app)                    Size      First Load JS
 
 ---
 
-## 十、下一阶段设计预检
+## 十、MCP Marketplace 设计（Phase 8 扩展）
 
-### Phase 8 — 企业业务系统 MCP Servers
+### 架构概览
 
-**需扩展的模块**:
-- `packages/mcp-servers/` — 7 个 stub server 需填充实际业务 API 逻辑
-- `@synapse/mcp-hub` — Auth Gateway（凭证加密）、独立 Router 模块
-- `@synapse/server` — `/api/settings` 路由 (MCP Server 配置管理)
-- `@synapse/web` — Settings 页面增加 MCP Server 配置管理 UI
+```
+MCPHub ←──── MCPHubAdapter (接口) ←──── MCPMarketplace
+  │                                          │
+  ├─ Registry (connected servers)        ├─ MarketplaceRegistry (file-based)
+  ├─ Metrics (uptimeRate/latency/error)  ├─ RatingStore (user reviews)
+  └─ Config (MCPServerConfig)            ├─ RankingEngine (纯函数)
+                                         └─ ReviewEngine (发布审核 + 质量检查)
+```
+
+**循环依赖避免**: `MCPMarketplace` 不直接依赖 `@synapse/mcp-hub`，通过 `MCPHubAdapter` 接口由 `server` 层桥接注入，实现真正的模块隔离。
+
+### 数据模型
+
+**MCPServerListing 三段结构**:
+| 段 | 字段 | 来源 |
+|---|------|------|
+| 静态元数据 | id/name/description/category/tags/author/version/toolCount/toolNames/serverConfig | 发布时写入 |
+| 运行时指标 | uptimeRate/avgLatencyMs/errorRate/totalCalls | `syncMetrics()` 从 MCPHub 同步 |
+| 市场数据 | installs/rating{average,count}/status/publishedAt/updatedAt | 用户行为驱动 |
+
+**状态机 (MCPListingStatus)**:
+```
+pending_review → active ←→ suspended
+                     ↓
+               deprecated / rejected
+```
+
+### 排名算法
+
+```
+score = reliability×0.35 + performance×0.25 + rating×0.25 + recency×0.15
+
+reliability = uptimeRate × (1 - errorRate)
+performance = 1 - clamp(avgLatencyMs / 5000, 0, 1)
+rating      = count===0 ? 0.5 : average / 5          # 无评价给中立 0.5
+recency     = 2^(-daysSinceUpdate / 90)              # 90 天半衰期
+```
+
+### 质量检查触发条件
+
+| 条件 | 操作 |
+|------|------|
+| errorRate > 30% && totalCalls ≥ 20 | suspend |
+| uptimeRate < 70% && totalCalls ≥ 10 | suspend |
+| rating.average < 2.0 && rating.count ≥ 3 | suspend |
+| reportCount ≥ 3 | suspend |
+| avgLatencyMs > 5000 | warn |
+| 90 天无调用 | deprecated |
+
+### 发布审核评分
+
+| 维度 | 权重 | 通过条件 |
+|------|------|---------|
+| 文档质量 | 30% | description 非空 + tags ≥ 1 + name 合规 |
+| 工具覆盖 | 25% | toolCount ≥ 1 |
+| 安全配置 | 25% | requireApproval 已配置 |
+| 配置完整性 | 20% | healthCheck + rateLimit 字段完整 |
+
+- score ≥ 70 → `active` (autoApprove)
+- 30-69 → `pending_review`
+- < 30 → 拒绝发布 (400)
+
+### API 端点 (16 个)
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /mcp-marketplace/status | 市场统计 |
+| GET | /mcp-marketplace/browse | 浏览（category, sort） |
+| GET | /mcp-marketplace/top | 排行榜（limit=10） |
+| GET | /mcp-marketplace/search | 搜索 |
+| GET | /mcp-marketplace/pending | 待审核列表 |
+| POST | /mcp-marketplace/publish | 发布 MCP Server |
+| GET/PUT/DELETE | /mcp-marketplace/servers/:id | 详情/更新/下架 |
+| POST | /mcp-marketplace/servers/:id/install | 安装到 Hub |
+| POST | /mcp-marketplace/servers/:id/uninstall | 卸载 |
+| POST | /mcp-marketplace/servers/:id/review | 人工审核 |
+| GET/POST | /mcp-marketplace/servers/:id/reviews | 评价列表/提交 |
+| GET | /mcp-marketplace/installed | 已安装列表 |
+| POST | /mcp-marketplace/sync/:id | 同步运行时指标 |
+
+### 文件存储结构
+
+```
+data/mcp-marketplace/
+├── registry/
+│   ├── _index.json      # { id, name, category, status, publishedAt }[]
+│   └── {serverId}.json  # 完整 MCPServerListing
+└── reviews/
+    ├── _index.json      # { id, serverId, userId, rating, createdAt }[]
+    └── {reviewId}.json  # 完整 MCPServerReview
+```
+
+### 前端页面结构
+
+```
+/mcp-marketplace
+└── McpMarketplacePanel
+    ├── McpMarketplaceStats（5 卡片：已发布/已安装/待审核/平均可用率/总调用数）
+    └── Tabs
+        ├── browse — ServerBrowser（搜索+分类过滤+排序） → ServerCard × N
+        │           → ServerDetailDialog（工具列表+运行指标+评价）
+        ├── installed — 已安装列表（inline）
+        └── pending   — 审核队列（inline），同 Skill Marketplace ReviewQueue 模式
+```
+
+### 技术决策记录
+
+| 决策 | 选择 | 理由 |
+|------|------|------|
+| Hub-Marketplace 解耦 | MCPHubAdapter 接口 + server 层桥接 | 避免循环依赖，两包独立可测 |
+| hub['registry'] bracket 访问 | 不新增 MCPHub 公共方法 | 保持 MCPHub API 清洁 |
+| getServerStatus 返回 string | 不用 MCPListingStatus 枚举 | Hub 状态(connected/error/...) ≠ 市场状态 |
+| syncMetrics 双态检查 | `=== 'connected' \|\| === 'active'` | app.ts adapter 已将 hub 状态映射为 'active' |
+| toolCount 在 seed 时为 0 | 已知限制，sync 后更新 | Hub 连接工具发现是异步的，seed 时还未完成 |
+
+---
+
+## 十一、下一阶段设计预检
+
+### Phase 9+ — 能力增强
 
 **设计决策待定**:
 - MCP Auth: 凭证加密 AES-256-GCM vs 环境变量 vs Vault 集成
@@ -647,12 +762,12 @@ Route (app)                    Size      First Load JS
 
 **前置依赖检查**:
 - ✅ MCP Hub 核心框架已完成（Registry + Aggregator + Health + Audit + Rate Limit）
-- ✅ database + http-api 两个基础 MCP Server 已验证模式
-- ✅ 7 个业务系统 stub server 已创建 (bi, crm, erp, feishu, finance, hrm, legal)，含配置 JSON
+- ✅ MCP Marketplace 已完成（16 API 端点 + 前端页面 + 排名/审核/质量检查）
+- ✅ 7 个业务系统 stub server 已启用并注册到市场（bi, crm, erp, feishu, finance, hrm, legal）
 - ✅ Agent tool loop 支持 MCP 工具自动发现和注册
 - ✅ 浏览器自动化已完成 (@synapse/browser + 6 browser tools)
-- ✅ Web UI 全部功能页面就绪，新增 MCP Server 可立即在 /mcp 页面可视化
-- ⚠️ 需要企业系统 API 文档和测试账号
+- ✅ Web UI 全部功能页面就绪（含 /mcp-marketplace）
+- ⚠️ 需要企业系统 API 文档和测试账号（stub → 真实 API）
 
 ---
 
@@ -738,11 +853,11 @@ Phase 14+(长期)   → Ollama + 远程 Registry + 上报机制 + Skill 依赖 +
 
 | 维度 | 已实现 | 总规划 | 完成率 |
 |------|--------|--------|--------|
-| 九层架构 | 9/9 基础实现 | 9 层 | 100% 覆盖，70% 深度 |
-| Package | 14 个 | 14 个 | 100% |
-| API 端点 | 89 个 | ~100+ | ~89% |
-| MCP Servers | 9 个 (2 完整 + 7 stub) | 15+ | ~30% |
+| 九层架构 | 9/9 基础实现 | 9 层 | 100% 覆盖，75% 深度 |
+| Package | 15 个（含 mcp-marketplace） | 15 个 | 100% |
+| API 端点 | 105 个（+16 mcp-marketplace） | ~110+ | ~95% |
+| MCP Servers | 10 个 (2 完整 + 8 stub + 1 feishu 真实) | 15+ | ~40% |
 | 内置工具 | 16 个 | 16 个 | 100% |
-| 前端页面 | 10 个 | 10 个 | 100% |
-| 配置文件 | 9 MCP + 7 persona + 4 compliance + 11 proactive + 2 decision + 10 skills = 43 | ~50 | ~86% |
-| **PLAN.md 功能点** | **~120/153** | **~153** | **~78%** |
+| 前端页面 | 11 个（含 /mcp-marketplace） | 11 个 | 100% |
+| 配置文件 | 10 MCP + 7 persona + 4 compliance + 11 proactive + 2 decision + 10 skills = 44 | ~50 | ~88% |
+| **PLAN.md 功能点** | **~130/153** | **~153** | **~85%** |
