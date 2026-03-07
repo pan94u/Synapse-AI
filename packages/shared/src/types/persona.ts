@@ -1,6 +1,7 @@
 export interface PersonaConfig {
   id: string;
   name: string;
+  tagline?: string;
   description: string;
   personality: {
     tone: 'professional' | 'friendly' | 'concise' | 'detailed';

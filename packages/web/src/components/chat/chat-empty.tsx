@@ -28,7 +28,7 @@ export function ChatEmpty() {
       </div>
       <div>
         <h2 className="text-xl font-semibold">{activePersona.name}</h2>
-        <p className="mt-2 max-w-md text-muted-foreground">{activePersona.description}</p>
+        <p className="mt-2 max-w-lg text-muted-foreground">{activePersona.tagline ?? activePersona.description}</p>
       </div>
       <p className="text-sm text-muted-foreground">{zh.chat.emptyState}</p>
     </div>

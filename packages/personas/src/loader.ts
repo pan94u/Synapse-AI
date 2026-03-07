@@ -6,6 +6,7 @@ import type { PersonaConfig } from '@synapse/shared';
 interface RawPersonaYaml {
   id: string;
   name: string;
+  tagline?: string;
   description: string;
   personality: {
     tone: string;
@@ -28,6 +29,7 @@ function toPersonaConfig(raw: RawPersonaYaml): PersonaConfig {
   return {
     id: raw.id,
     name: raw.name,
+    tagline: raw.tagline,
     description: raw.description,
     personality: {
       tone: raw.personality.tone as PersonaConfig['personality']['tone'],
