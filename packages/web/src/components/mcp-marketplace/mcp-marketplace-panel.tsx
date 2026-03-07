@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { McpMarketplaceStats } from './mcp-marketplace-stats';
 import { ServerBrowser } from './server-browser';
 import { ServerIntegrationGuide } from './server-integration-guide';
+import { SwaggerImportDialog } from './swagger-import-dialog';
 import { apiFetch } from '@/lib/api';
 import { zh } from '@/messages/zh';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -263,10 +264,20 @@ function PendingQueue() {
 
 export function McpMarketplacePanel() {
   const t = zh.mcpMarketplace;
+  const [importOpen, setImportOpen] = useState(false);
 
   return (
     <div className="space-y-4">
-      <McpMarketplaceStats />
+      <div className="flex items-center justify-between">
+        <McpMarketplaceStats />
+        <Button onClick={() => setImportOpen(true)} size="sm">
+          {t.swaggerImport.button}
+        </Button>
+      </div>
+      <SwaggerImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+      />
       <Tabs defaultValue="guide">
         <TabsList>
           <TabsTrigger value="guide">{t.tabs.guide}</TabsTrigger>
