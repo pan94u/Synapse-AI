@@ -15,6 +15,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { McpMarketplaceStats } from './mcp-marketplace-stats';
 import { ServerBrowser } from './server-browser';
+import { ServerIntegrationGuide } from './server-integration-guide';
 import { apiFetch } from '@/lib/api';
 import { zh } from '@/messages/zh';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -266,12 +267,16 @@ export function McpMarketplacePanel() {
   return (
     <div className="space-y-4">
       <McpMarketplaceStats />
-      <Tabs defaultValue="browse">
+      <Tabs defaultValue="guide">
         <TabsList>
+          <TabsTrigger value="guide">{t.tabs.guide}</TabsTrigger>
           <TabsTrigger value="browse">{t.tabs.browse}</TabsTrigger>
           <TabsTrigger value="installed">{t.tabs.installed}</TabsTrigger>
           <TabsTrigger value="pending">{t.tabs.pending}</TabsTrigger>
         </TabsList>
+        <TabsContent value="guide">
+          <ServerIntegrationGuide />
+        </TabsContent>
         <TabsContent value="browse">
           <ServerBrowser />
         </TabsContent>
