@@ -12,6 +12,7 @@ export function createPersonaRoutes(personaRegistry: PersonaRegistry, toolRegist
       personas: personas.map((p) => ({
         id: p.id,
         name: p.name,
+        tagline: p.tagline,
         description: p.description,
         personality: p.personality,
         complianceRuleset: p.complianceRuleset,
