@@ -307,6 +307,8 @@ AI:   分析现状 → 提出方案 → 人类确认 → 逐步实现
 | Phase 8 | MCP Marketplace 生态化市场 | ✅ 完成 |
 | Phase 9 | 浏览器自动化 + MCP Server Stubs | ✅ 完成 |
 | Phase 10 | Web UI (8 功能页面 + ~40 组件) | ✅ 完成 |
+| Phase 10.5 | MCP Server 能力扩展（远程 SSE UX + Swagger 导入 + 原语 + 双模式） | 🚧 进行中 |
+| Phase 11.5 | MCP OAuth 认证（per-user 身份 + Token 管理） | 📋 待开始 |
 
 ---
 

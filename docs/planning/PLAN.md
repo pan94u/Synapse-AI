@@ -2237,6 +2237,23 @@ Agent 提炼 ── 对话中发现有价值的信息，建议沉淀
 11. **系统设置**：模型配置、个人记忆、通知偏好
 12. 侧边栏导航 + 角色切换
 
+### Phase 10.5: MCP Server 能力扩展
+**目标**：响应用户反馈，深化 MCP 市场实用性
+
+1. **远程 SSE Server 体验优化**：接入指南补充远程配置完整示例；Server Browser 卡片增加「远程/本地」标签区分
+2. **Swagger/OpenAPI → MCP 一键导入**：MCP Marketplace 新增「导入 API 文档」入口，解析 OpenAPI 3.x / Swagger 2.0 JSON/YAML → 自动生成 config JSON + http-api adapter stub → 直接发布到市场
+3. **MCP 原语扩展**：MCP Hub 扩展支持 `resource`（资源读取）、`root`（根目录）、`prompt`（提示模板）三种原语；前端 MCP 连接页工具详情展示
+4. **MCP 客户端双模式**：无状态（one-call，每次请求独立连接）+ 有状态（长连接/session 复用）可按 Server 配置切换
+
+### Phase 11.5: MCP OAuth 认证
+**目标**：MCP Server per-user 身份认证，AI 以用户真实身份访问企业系统
+
+1. **per-server auth config**：支持 apiKey / Bearer Token / OAuth2 三种认证方式，配置存于 `.env.local`
+2. **OAuth2 授权跳转流程**：Authorization Code Flow，前端跳转 → 回调 → Token 写入
+3. **Token 安全存储**：AES-256-GCM 加密存储 + 自动刷新（refresh token）
+4. **Agent 调用携带身份**：MCP Hub 在请求头自动注入用户凭证，Agent 无感知
+5. **前端鉴权状态**：MCP 连接页展示授权状态 + 「跳转授权」入口
+
 ## 验证方式
 
 每个 Phase 的验证标准对齐愿景目标：
@@ -2255,6 +2272,8 @@ Agent 提炼 ── 对话中发现有价值的信息，建议沉淀
 | **8** | "这个客户的合同、应收款和最近工单" → Agent 跨 CRM+Legal+Finance 一次查齐 | **解放人** |
 | **9** | Agent 通过浏览器操作无 API 的老旧系统 | 全覆盖 |
 | **10** | CEO 登录 → 决策驾驶舱实时显示经营指标 + OKR 进度 + 洞察预警 → 点击洞察展开分析 → 做出决策并留痕 | **完整体验** |
+| **10.5** | 粘贴 Swagger JSON → MCP Server 自动生成 → 发布到市场 → Agent 立即可调用 | **生态扩展** |
+| **11.5** | 在 MCP 设置页授权 ALM 账号 → OAuth 跳转 → Agent 以用户身份查询 ALM 数据 | **身份安全** |
 
 ## 关键依赖
 

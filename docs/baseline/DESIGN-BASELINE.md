@@ -549,6 +549,8 @@ src/
 | Phase 10 | Web UI (8 功能页面 + ~40 组件 + 7 shadcn/ui) | ✅ 完成 | 2026-03-04 | 待提交 |
 | Phase 8 | 企业业务系统 MCP Servers | 📋 待开始 | — | — |
 | Phase 9 | 浏览器自动化 + MCP Server Stubs | ✅ 完成 | 2026-03-03 | 待提交 |
+| Phase 10.5 | MCP Server 能力扩展（远程 SSE UX + Swagger 导入 + 原语 + 双模式客户端） | 📋 待开始 | — | — |
+| Phase 11.5 | MCP OAuth 认证（per-user 身份 + Token 管理） | 📋 待开始 | — | — |
 
 ---
 
@@ -813,6 +815,16 @@ data/mcp-marketplace/
 | 21 | 记忆自动整合 | §组织记忆 §9.3 | ⑦ | 缺过期清理和自动摘要整合 | Phase 13 |
 | 22 | Agent 自动提取记忆 | §个人记忆 §10.2 | ⑦ | 缺对话自动提取偏好/事实 | Phase 13 |
 
+### Phase 10.5 新增需求（用户反馈 2026-03-08）
+
+| # | 功能 | 来源 | 说明 | 建议 Phase |
+|---|------|------|------|-----------|
+| 34 | 远程 SSE Server UX 优化 | 周小帅反馈 | 接入指南补充远程配置示例；Server Browser 增加远程/本地标签 | Phase 10.5 Step 1 |
+| 35 | Swagger/OpenAPI → MCP 一键导入 | 朱广聪反馈 | 解析 OpenAPI 3.x / Swagger 2.0 → 生成 config + adapter stub → 发布市场 | Phase 10.5 Step 2 |
+| 36 | MCP 原语扩展（resource/root/prompt） | 周小帅反馈 | Hub 扩展三种原语；前端展示 | Phase 10.5 Step 3 |
+| 37 | MCP 客户端双模式（无状态/有状态） | 周小帅反馈 | one-call + 长连接 session 可配置 | Phase 10.5 Step 4 |
+| 38 | MCP OAuth 认证 | 胖胖神反馈 | per-server OAuth2 授权跳转 + Token 管理 + Agent 携带用户身份 | Phase 11.5 |
+
 ### P3 — 扩展功能（不影响核心，按需推进）
 
 | # | 功能 | PLAN.md 位置 | 所属层 | 说明 | 建议 Phase |
@@ -842,8 +854,10 @@ data/mcp-marketplace/
 ### 建议实施路线
 
 ```
+Phase 10.5 (新增) → 远程 SSE UX + Swagger 导入 + resource/root/prompt 原语 + 客户端双模式 (用户反馈)
 Phase 8  (已规划) → MCP Auth + MCP Servers 填充 + SSE/Resources + MySQL/PG + Git/Email/企微/DMS Server + BaseMCPServer
 Phase 11 (新增)   → Auth 鉴权 + WebSocket 推送 + 通知渠道 + 审计持久化 (P0 全清)
+Phase 11.5 (新增) → MCP OAuth 认证 + per-user Token 管理 + Agent 身份携带 (用户反馈)
 Phase 12 (新增)   → Planner + 多 Agent + 向量搜索 + 决策顾问 + 补偿器 (P1 全清)
 Phase 13 (新增)   → 可视化仪表盘 + 日报 + Skill 增强 + Persona 编辑器 + 报告导出 + 记忆增强 (P2 全清)
 Phase 14+(长期)   → Ollama + 远程 Registry + 上报机制 + Skill 依赖 + Onboarding + 浏览器查看器 (P3 按需)
