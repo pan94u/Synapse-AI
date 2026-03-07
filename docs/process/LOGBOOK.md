@@ -2089,3 +2089,67 @@ config/personas/engineer.yaml                    # +tagline
 | Commits | 2 (`d0bf68d`, `f8e8f42`) |
 | 类型检查 | shared / personas 通过 |
 | 新增测试用例 | 15（TC-14）|
+
+---
+
+## Session 19 — MCP Marketplace 接入指南 Tab
+
+**日期**: 2026-03-07
+**Commits**: `ca311e5` feat: MCP Marketplace 新增接入指南 Tab
+
+### Plan（目标）
+
+为 MCP Marketplace 补全「接入指南」Tab（对齐 Skill Marketplace 的 4 Tab 设计），包含 MCP Server 接入所需的全部参考信息：协议类型、配置规范、工具命名、检查清单、生命周期和审核标准。
+
+### Do（实施）
+
+1. **i18n 文案** (`packages/web/src/messages/zh.ts`)
+   - `mcpMarketplace.tabs` 新增 `guide: '接入指南'`（放第一位）
+   - 新增 `mcpMarketplace.guide` 子对象，覆盖 8 个 Card 的所有文案：`overview`、`workflow`、`transport`、`config`、`naming`、`checklist`、`lifecycle`、`review`、`categories`
+
+2. **新建组件** (`packages/web/src/components/mcp-marketplace/server-integration-guide.tsx`)
+   - 8 个 Card 从上到下：
+     1. 概述（什么是 MCP Server，2 段介绍）
+     2. 接入流程（5 步有序列表，圆形数字 badge）
+     3. Server 类型（stdio / SSE 两列对比卡 + 3 行比较表格）
+     4. 配置文件规范（JSON 代码块 + Separator + 字段必填/可选表）
+     5. 工具命名规范（格式说明 + 正确/错误代码块 + 3 条规则）
+     6. 接入检查清单（3 组 ChecklistSection：配置完整性 / 健康指标 / 安全合规）
+     7. Server 生命周期（LifecycleNode + LifecycleArrow 状态流图，两行：自动上架路径 + 人工审核路径）
+     8. 审核标准（4 条标准：功能完整性 35% / 安全合规 30% / 运行稳定性 20% / 文档质量 15%）
+   - `ChecklistSection`、`LifecycleNode`、`LifecycleArrow` 内联实现，不跨组件导入
+
+3. **Panel 更新** (`packages/web/src/components/mcp-marketplace/mcp-marketplace-panel.tsx`)
+   - 新增 `import { ServerIntegrationGuide }`
+   - `defaultValue` 改为 `"guide"`
+   - `TabsList` 最前插入接入指南 `TabsTrigger`
+   - `Tabs` 内最前插入 `TabsContent value="guide"`
+
+### Check（文件变更表）
+
+```
+新建文件 (1):
+packages/web/src/components/mcp-marketplace/server-integration-guide.tsx  # ~300 行
+
+修改文件 (2):
+packages/web/src/messages/zh.ts                                            # +108 行文案
+packages/web/src/components/mcp-marketplace/mcp-marketplace-panel.tsx     # +7 行
+```
+
+**类型检查**: `bun x tsc --noEmit -p packages/web/tsconfig.json` → exit 0，无错误
+
+### Act（经验沉淀）
+
+- **Tab 对称性原则**：同一产品内相似功能模块（Skill Marketplace vs MCP Marketplace）应保持 Tab 数量和结构一致，否则用户心智负担增加。发现不对称时应同 Session 补全。
+- **内联 vs 跨组件复用**：小型 helper 组件（如 `ChecklistSection`、`LifecycleNode`）在两个不相关模块中分别内联实现，优于跨组件目录导入——避免隐式耦合，各模块可独立演进。
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 新建文件 | 1 |
+| 修改文件 | 2 |
+| Bug 修复 | 0 |
+| Commits | 1 (`ca311e5`) |
+| 类型检查 | web 通过（exit 0）|
+| i18n 新增 key | ~70 行文案 |
