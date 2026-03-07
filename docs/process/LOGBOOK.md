@@ -2026,3 +2026,66 @@ docs/process/LOGBOOK.md           # 本 Session 记录
 | 启用 MCP Server | 7（bi/crm/erp/finance/hrm/legal/http-api）|
 | MCP Marketplace 总注册数 | 10 |
 | 新增测试用例 | 15（TC-14）|
+
+---
+
+## Session 18 — ChatEmpty tagline 字段分离
+
+**日期**: 2026-03-07
+**Commits**: `d0bf68d` feat: 新增 persona tagline 字段，分离展示层与系统提示层 / `f8e8f42` fix: personas 路由 map 补充 tagline 字段
+
+### Plan（目标）
+
+新增可选 `tagline` 字段，将 Persona 的用户展示文案与系统提示内容彻底分离，解决 CEO 角色欢迎页泄漏 `chat_id` / `open_id` 等技术配置的问题。
+
+### Do（实施）
+
+1. **类型层**
+   - `packages/shared/src/types/persona.ts`：`PersonaConfig` 新增 `tagline?: string`
+   - `packages/personas/src/loader.ts`：`RawPersonaYaml` 新增 `tagline?: string`；`toPersonaConfig()` 映射该字段
+
+2. **配置层（8 个 YAML）**
+   - 所有角色在 `description:` 上方追加 `tagline:` —— 2-3 句面向用户的简洁业务介绍
+   - CEO tagline 完全隐去 chat_id / calendar_id / open_id 等技术细节，description 保持不变用于系统提示
+
+3. **前端层**
+   - `packages/web/src/components/chat/chat-empty.tsx`：展示逻辑改为 `tagline ?? description`；宽度从 `max-w-md` 放宽至 `max-w-lg`
+
+4. **Bug 修复（部署后发现）**
+   - `packages/server/src/routes/personas.ts`：`GET /api/personas` 手动 map 字段时漏掉 `tagline`，导致前端始终拿不到该字段，fallback 到 description，UI 无变化
+   - 修复后 API 返回全部 8 个角色的 tagline，欢迎页展示正常
+
+### Check（文件变更表）
+
+```
+修改文件 (12):
+packages/shared/src/types/persona.ts             # +1 行 tagline?: string
+packages/personas/src/loader.ts                  # +2 行（RawPersonaYaml + toPersonaConfig）
+packages/server/src/routes/personas.ts           # +1 行 tagline: p.tagline（Bug fix）
+packages/web/src/components/chat/chat-empty.tsx  # tagline ?? description + max-w-lg
+config/personas/ceo.yaml                         # +tagline
+config/personas/investment-manager.yaml          # +tagline
+config/personas/hr-manager.yaml                  # +tagline
+config/personas/finance-controller.yaml          # +tagline
+config/personas/legal-counsel.yaml               # +tagline
+config/personas/sales-rep.yaml                   # +tagline
+config/personas/ops-manager.yaml                 # +tagline
+config/personas/engineer.yaml                    # +tagline
+```
+
+### Act（经验沉淀）
+
+- **服务端手动 map 字段是漏洞点**：路由层对 Persona 对象做 `{ id, name, description, ... }` 手动 select 时，新增字段若不同步修改路由，前端永远拿不到，且不会有任何报错。规则：新增 `PersonaConfig` 字段后，立即检查 `packages/server/src/routes/personas.ts` 的 map 结构
+- **展示层 vs 系统提示层职责分离**：`description` 承担双重职责（UI 展示 + 系统提示）是设计债务。`tagline` 模式（专用展示字段 + fallback）是正确方向，其他有类似双重职责的字段可参考此模式
+- **部署验证顺序**：UI 改动后应先验证 API 返回值（`curl /api/personas`），再看前端，避免前端 fallback 掩盖数据层问题
+
+### 统计快照
+
+| 指标 | 值 |
+|------|-----|
+| 新建文件 | 0 |
+| 修改文件 | 12 |
+| Bug 修复 | 1（personas 路由 map 漏字段）|
+| Commits | 2 (`d0bf68d`, `f8e8f42`) |
+| 类型检查 | shared / personas 通过 |
+| 新增测试用例 | 15（TC-14）|
