@@ -8,3 +8,4 @@ bun.lockb
 .DS_Store
 packages/web/.next/
 packages/server/data/
+data/
