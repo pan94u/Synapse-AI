@@ -33,7 +33,12 @@ export function ServerCard({ listing, onInstall, onClick }: ServerCardProps) {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <CardTitle className="text-base">{listing.name}</CardTitle>
-          <Badge variant="outline">{listing.category}</Badge>
+          <div className="flex items-center gap-1">
+            <Badge variant={listing.transport === 'sse' ? 'secondary' : 'outline'} className="text-[10px] px-1.5">
+              {listing.transport === 'sse' ? t.remote : t.local}
+            </Badge>
+            <Badge variant="outline">{listing.category}</Badge>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground">{listing.author?.name}</p>
       </CardHeader>

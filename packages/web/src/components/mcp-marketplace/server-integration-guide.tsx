@@ -142,6 +142,30 @@ function TransportCard() {
           </div>
         </div>
 
+        {/* Remote SSE config example */}
+        <div className="space-y-1">
+          <p className="text-sm font-medium">远程 SSE Server 配置示例</p>
+          <pre className="bg-muted rounded-lg p-4 text-xs overflow-x-auto whitespace-pre">
+{`{
+  "id": "bi-server",
+  "url": "https://bi.your-company.com/mcp",
+  "transport": "sse",
+  "permissions": {
+    "tools": ["bi_server_query_dashboard", "bi_server_export_report"]
+  },
+  "category": "analytics",
+  "metadata": {
+    "author": "your-name",
+    "version": "1.0.0",
+    "description": "BI 报表平台 MCP Server，支持仪表盘查询和报告导出"
+  },
+  "env": {
+    "BI_API_TOKEN": "\${BI_API_TOKEN}"
+  }
+}`}
+          </pre>
+        </div>
+
         {/* Compare table */}
         <Table>
           <TableHeader>

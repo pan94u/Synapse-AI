@@ -665,6 +665,8 @@ export const zh = {
       latency: '延迟',
       rating: '评分',
       calls: '调用数',
+      remote: '远程',
+      local: '本地',
     },
     detail: {
       title: '详情',
